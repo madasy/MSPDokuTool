@@ -17,10 +17,11 @@ class IpAddress(
     @Column(columnDefinition = "inet", nullable = false)
     var address: String, // e.g. "192.168.1.50"
 
-    var status: String = "active", // active, reserved, dhcp
+    var status: String = "active", // active, reserved, dhcp, manual, free
 
     var hostname: String? = null,
     var description: String? = null,
+    var mac: String? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "interface_id")
