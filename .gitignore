@@ -1,0 +1,15 @@
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Backend
+backend/build/
+backend/.gradle/
+backend/out/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local

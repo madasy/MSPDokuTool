@@ -1,0 +1,30 @@
+# Tasks
+
+- [x] Initial Repository Setup <!-- id: 0 -->
+- [x] Create Product Vision & Requirements (`product_definition.md`) <!-- id: 1 -->
+- [x] Design Data Model (`data_model.md`) <!-- id: 3 -->
+    - [x] Define Core Entities & Relationships <!-- id: 4 -->
+    - [x] Design Port History & Rack Visualization <!-- id: 5 -->
+    - [x] Relational vs Graph Analysis <!-- id: 6 -->
+- [x] Ask for feedback on Data Model <!-- id: 7 -->
+- [ ] Project Initialization <!-- id: 8 -->
+    - [x] Create Implementation Plan (`implementation_plan.md`) <!-- id: 9 -->
+    - [x] Initialize Git Repository <!-- id: 10 -->
+    - [x] Setup Backend (Spring Boot + Kotlin) <!-- id: 11 -->
+    - [x] Setup Frontend (React + TypeScript) <!-- id: 12 -->
+    - [x] Setup Infrastructure (Docker Compose) <!-- id: 13 -->
+- [x] UX Design & Information Architecture <!-- id: 14 -->
+    - [x] Create UX Concept (`ux_design.md`) <!-- id: 15 -->
+    - [x] Define Navigation & Screen Layouts <!-- id: 16 -->
+    - [x] Design Public IP Management Flow <!-- id: 17 -->
+- [x] Security Architecture & SSO <!-- id: 18 -->
+    - [x] Create Security Concept (`security_architecture.md`) <!-- id: 19 -->
+    - [x] Define Iframe SSO Strategy (Modern Browser Support) <!-- id: 20 -->
+    - [x] Define Link Sharing & Authorization Model <!-- id: 21 -->
+- [x] IAM & RBAC Design <!-- id: 22 -->
+    - [x] Create Role & Permission Matrix (`iam_rbac_design.md`) <!-- id: 23 -->
+    - [x] Define Entra ID Group Mapping Strategy <!-- id: 24 -->
+    - [x] Define Tenant Isolation Rules <!-- id: 25 -->
+- [x] Network Documentation Specs <!-- id: 26 -->
+    - [x] Define Data Fields & Validations (`network_documentation_specs.md`) <!-- id: 27 -->
+    - [x] Define Standard Workflows (Onboarding, Move, Replace) <!-- id: 28 -->
