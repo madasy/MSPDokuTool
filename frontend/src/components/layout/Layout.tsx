@@ -1,10 +1,11 @@
-import { LayoutDashboard, Network, Server, Users, Settings, LogOut, ChevronRight, Star, Globe, Search, ChevronsUpDown, Check, Building } from 'lucide-react';
+import { LayoutDashboard, Network, Server, Users, Settings, LogOut, ChevronRight, Star, Globe, Search, ChevronsUpDown, Check, Building, Menu, X, StarOff, Cpu, Monitor } from 'lucide-react';
 import { NavLink, Outlet, useLocation, useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TenantService } from '../../services/TenantService';
 import { cn } from '../../lib/utils';
 import CommandPalette from './CommandPalette';
 import { useState, useRef, useEffect } from 'react';
+import { useFavorites } from '../../hooks/useFavorites';
 
 export default function Layout() {
     const location = useLocation();
@@ -22,14 +23,27 @@ export default function Layout() {
     });
 
     const currentTenant = tenants?.find(t => t.id === tenantId);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    // Close mobile menu on route change
+    useEffect(() => { setMobileMenuOpen(false); }, [location.pathname]);
 
     return (
         <div className="flex h-screen font-sans overflow-hidden bg-slate-50">
             {/* Command Palette */}
             <CommandPalette />
 
+            {/* Mobile Overlay */}
+            {mobileMenuOpen && (
+                <div className="fixed inset-0 bg-black/40 z-30 lg:hidden animate-fade-in" onClick={() => setMobileMenuOpen(false)} />
+            )}
+
             {/* Sidebar (Left Menu) */}
-            <aside className="w-64 min-w-[256px] bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 z-20 border-r border-white/10 shadow-xl">
+            <aside className={cn(
+                'w-64 min-w-[256px] bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 z-40 border-r border-white/10 shadow-xl',
+                'fixed inset-y-0 left-0 transition-transform duration-300 lg:relative lg:translate-x-0',
+                mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+            )}>
                 {/* Logo */}
                 <div
                     className="h-16 flex items-center px-6 border-b border-white/10 cursor-pointer hover:bg-white/5 transition-colors"
@@ -72,14 +86,16 @@ export default function Layout() {
                             <div>
                                 <SectionHeader label="Infrastruktur" />
                                 <div className="space-y-1 mt-2">
-                                    <NavItem to={`/tenants/${tenantId}/racks`} icon={<Server size={18} />} label="Racks & Hardware" />
+                                    <NavItem to={`/tenants/${tenantId}/racks`} icon={<Server size={18} />} label="Racks" />
+                                    <NavItem to={`/tenants/${tenantId}/hardware`} icon={<Cpu size={18} />} label="Hardware" />
                                 </div>
                             </div>
 
                             <div>
                                 <SectionHeader label="Netzwerk" />
                                 <div className="space-y-1 mt-2">
-                                    <NavItem to={`/tenants/${tenantId}/network`} icon={<Network size={18} />} label="IP-Plan & Ranges" />
+                                    <NavItem to={`/tenants/${tenantId}/network`} icon={<Network size={18} />} label="IP-Plan" />
+                                    <NavItem to={`/tenants/${tenantId}/switches`} icon={<Monitor size={18} />} label="Switches" />
                                 </div>
                             </div>
 
@@ -96,12 +112,7 @@ export default function Layout() {
                                 <NavItem to="/datacenter" icon={<Globe size={18} />} label="Datacenter / IPs" />
                             </div>
 
-                            <div>
-                                <SectionHeader icon={<Star size={12} />} label="Favoriten" />
-                                <div className="px-3 py-3 text-[11px] text-white/30 italic">
-                                    Keine Favoriten gepinnt
-                                </div>
-                            </div>
+                            <FavoritesSidebar />
                         </>
                     )}
 
@@ -124,9 +135,17 @@ export default function Layout() {
             <div className="flex-1 flex flex-col min-w-0 h-full bg-slate-50 relative">
 
                 {/* Header with Tenant Switcher (Top Right) */}
-                <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-8 shadow-sm flex-shrink-0 z-10 sticky top-0">
-                    {/* Left: Breadcrumbs */}
-                    <Breadcrumbs />
+                <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-4 lg:px-8 shadow-sm flex-shrink-0 z-10 sticky top-0">
+                    {/* Left: Hamburger + Breadcrumbs */}
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className="lg:hidden p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition-colors"
+                        >
+                            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                        </button>
+                        <Breadcrumbs />
+                    </div>
 
                     {/* Right: Tenant Switcher & User */}
                     <div className="flex items-center gap-5">
@@ -268,6 +287,7 @@ function TenantSwitcher({
 
 function Breadcrumbs() {
     const location = useLocation();
+    const queryClient = useQueryClient();
     const parts = location.pathname.split('/').filter(Boolean);
 
     const labels: Record<string, string> = {
@@ -278,21 +298,67 @@ function Breadcrumbs() {
         settings: 'Einstellungen',
     };
 
-    const crumbs = parts.map(p => labels[p] || p);
-    // If empty (home), just show Dashboard
-    if (crumbs.length === 0) return <span className="text-sm font-semibold text-slate-900">Dashboard</span>;
+    // Look up tenant name from cache for breadcrumb display
+    const tenants = queryClient.getQueryData<any[]>(['tenants']);
+
+    const crumbs = parts.map(p => {
+        if (labels[p]) return labels[p];
+        // Check if this is a tenant ID and resolve to name
+        const tenant = tenants?.find(t => t.id === p);
+        if (tenant) return tenant.name;
+        return p;
+    });
+
+    if (crumbs.length === 0) return <span className="text-sm font-semibold text-slate-900 dark:text-white">Dashboard</span>;
 
     return (
         <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
-            <NavLink to="/" className="hover:text-slate-800 transition-colors">
+            <NavLink to="/" className="hover:text-slate-800 dark:hover:text-white transition-colors">
                 <LayoutDashboard size={14} />
             </NavLink>
             {crumbs.map((crumb, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                     <ChevronRight size={12} className="opacity-40" />
-                    <span className={cn(idx === crumbs.length - 1 ? 'font-semibold text-slate-900' : 'text-slate-500 capitalize')}>{crumb}</span>
+                    <span className={cn(idx === crumbs.length - 1 ? 'font-semibold text-slate-900 dark:text-white' : 'text-slate-500 capitalize')}>{crumb}</span>
                 </div>
             ))}
+        </div>
+    );
+}
+
+function FavoritesSidebar() {
+    const { favorites, removeFavorite } = useFavorites();
+    const navigate = useNavigate();
+
+    return (
+        <div>
+            <SectionHeader icon={<Star size={12} />} label="Favoriten" />
+            {favorites.length === 0 ? (
+                <div className="px-3 py-3 text-[11px] text-white/30 italic">
+                    Keine Favoriten gepinnt
+                </div>
+            ) : (
+                <div className="space-y-0.5 mt-1">
+                    {favorites.map(fav => (
+                        <div key={fav.id} className="group flex items-center">
+                            <button
+                                onClick={() => navigate(fav.path)}
+                                className="flex-1 flex items-center gap-2 px-3 py-2 text-xs text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors truncate"
+                            >
+                                <Star size={12} className="text-amber-400 flex-shrink-0" />
+                                <span className="truncate">{fav.label}</span>
+                            </button>
+                            <button
+                                onClick={() => removeFavorite(fav.id)}
+                                className="opacity-0 group-hover:opacity-100 p-1 mr-2 text-white/30 hover:text-white/60 transition-all"
+                                title="Entfernen"
+                            >
+                                <StarOff size={12} />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
