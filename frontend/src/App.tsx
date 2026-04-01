@@ -12,6 +12,7 @@ import RackListPage from './pages/RackListPage';
 import HardwarePage from './pages/HardwarePage';
 import NetworkPage from './pages/NetworkPage';
 import DatacenterPage from './pages/DatacenterPage';
+import SitesPage from './pages/SitesPage';
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ function App() {
 
                     {/* Tenant-scoped routes */}
                     <Route path="tenants/:tenantId" element={<ErrorBoundary><TenantDashboardPage /></ErrorBoundary>} />
+                    <Route path="tenants/:tenantId/sites" element={<ErrorBoundary><SitesPage /></ErrorBoundary>} />
                     <Route path="tenants/:tenantId/racks" element={<ErrorBoundary><RackListPage /></ErrorBoundary>} />
                     <Route path="tenants/:tenantId/hardware" element={<ErrorBoundary><HardwarePage /></ErrorBoundary>} />
                     <Route path="tenants/:tenantId/network" element={<ErrorBoundary><NetworkPage /></ErrorBoundary>} />
