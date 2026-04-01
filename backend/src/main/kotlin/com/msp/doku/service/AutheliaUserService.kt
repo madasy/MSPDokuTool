@@ -139,6 +139,16 @@ class AutheliaUserService(
         }
     }
 
+    fun getLatestRegistrationLink(): String? {
+        val notifFile = File(usersFilePath).parent + "/notification.txt"
+        val file = File(notifFile)
+        if (!file.exists()) return null
+        val content = file.readText()
+        // Extract the one-time-code link from the notification
+        val regex = Regex("(https?://[^\\s]+one-time-code[^\\s]+)")
+        return regex.find(content)?.value
+    }
+
     private fun readUsersFile(): MutableMap<String, Any> {
         val file = File(usersFilePath)
         if (!file.exists()) {

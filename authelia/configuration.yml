@@ -10,6 +10,13 @@ log:
 
 totp:
   issuer: 'MSP DokuTool'
+  disable_reuse_security_policy: false
+  allowed_algorithms:
+    - SHA1
+  allowed_digits:
+    - 6
+  allowed_periods:
+    - 30
 
 identity_validation:
   reset_password:

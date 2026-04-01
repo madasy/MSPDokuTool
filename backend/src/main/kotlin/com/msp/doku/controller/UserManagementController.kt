@@ -47,4 +47,9 @@ class UserManagementController(
     fun resetTotp(@PathVariable username: String) {
         autheliaUserService.resetTotp(username)
     }
+
+    @GetMapping("/registration-link")
+    fun getRegistrationLink(): Map<String, String?> {
+        return mapOf("link" to autheliaUserService.getLatestRegistrationLink())
+    }
 }
