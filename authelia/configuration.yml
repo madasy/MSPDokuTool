@@ -6,7 +6,7 @@ server:
   address: 'tcp://:9091'
 
 log:
-  level: info
+  level: debug
 
 totp:
   issuer: 'MSP DokuTool'
@@ -42,21 +42,16 @@ notifier:
     filename: /config/notification.txt
 
 access_control:
-  default_policy: deny
+  default_policy: two_factor
   rules:
-    # Static assets — no auth
-    - domain: '127.0.0.1'
-      resources:
-        - '^\.(js|css|png|svg|ico|woff|woff2|ttf)$'
-      policy: bypass
-
-    # Admins and technicians — one factor only
+    # Admins — one factor only
     - domain: '127.0.0.1'
       subject:
-        - 'group:admins'
-        - 'group:technicians'
+        - ['group:admins']
       policy: one_factor
 
-    # Tenant users — require two factor (TOTP)
+    # Technicians — one factor only
     - domain: '127.0.0.1'
-      policy: two_factor
+      subject:
+        - ['group:technicians']
+      policy: one_factor
