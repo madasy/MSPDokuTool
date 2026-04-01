@@ -39,6 +39,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mspdoku
       SPRING_DATASOURCE_USERNAME: mspuser
       SPRING_DATASOURCE_PASSWORD: msppassword
+    volumes:
+      - ./authelia:/authelia-config
     depends_on:
       postgres:
         condition: service_healthy
