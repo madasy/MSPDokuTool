@@ -87,6 +87,42 @@ class AutheliaUserService(
         writeUsersFile(data)
     }
 
+    @Synchronized
+    fun resetPassword(username: String, newPassword: String) {
+        val data = readUsersFile()
+        val users = (data["users"] as? MutableMap<String, Any>)
+            ?: throw IllegalArgumentException("No users found")
+
+        val user = (users[username] as? MutableMap<String, Any>)
+            ?: throw IllegalArgumentException("User '$username' not found")
+
+        user["password"] = passwordEncoder.encode(newPassword)
+        users[username] = user
+        data["users"] = users
+        writeUsersFile(data)
+    }
+
+    fun resetTotp(username: String) {
+        // Authelia stores TOTP secrets in its SQLite database, not in users.yml.
+        // To reset 2FA, we delete the TOTP entry from Authelia's storage DB.
+        val dbPath = File(usersFilePath).parent + "/db.sqlite3"
+        val dbFile = File(dbPath)
+        if (!dbFile.exists()) return
+
+        try {
+            Class.forName("org.sqlite.JDBC")
+            java.sql.DriverManager.getConnection("jdbc:sqlite:$dbPath").use { conn ->
+                conn.prepareStatement("DELETE FROM totp_configurations WHERE username = ?").use { stmt ->
+                    stmt.setString(1, username)
+                    stmt.executeUpdate()
+                }
+            }
+        } catch (e: Exception) {
+            // SQLite driver may not be available — fall back to noting this limitation
+            throw IllegalStateException("TOTP reset requires SQLite driver. Add org.xerial:sqlite-jdbc to dependencies, or reset manually by deleting authelia/db.sqlite3 and restarting Authelia.")
+        }
+    }
+
     private fun readUsersFile(): MutableMap<String, Any> {
         val file = File(usersFilePath)
         if (!file.exists()) {

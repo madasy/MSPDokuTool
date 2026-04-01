@@ -42,9 +42,21 @@ notifier:
     filename: /config/notification.txt
 
 access_control:
-  default_policy: one_factor
+  default_policy: deny
   rules:
-    - domain: 'localhost'
+    # Static assets — no auth
+    - domain: '127.0.0.1'
       resources:
         - '^\.(js|css|png|svg|ico|woff|woff2|ttf)$'
       policy: bypass
+
+    # Admins and technicians — one factor only
+    - domain: '127.0.0.1'
+      subject:
+        - 'group:admins'
+        - 'group:technicians'
+      policy: one_factor
+
+    # Tenant users — require two factor (TOTP)
+    - domain: '127.0.0.1'
+      policy: two_factor

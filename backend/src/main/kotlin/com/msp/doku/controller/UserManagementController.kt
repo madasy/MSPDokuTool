@@ -33,4 +33,17 @@ class UserManagementController(
     fun deleteUser(@PathVariable username: String) {
         autheliaUserService.deleteUser(username)
     }
+
+    @PutMapping("/{username}/password")
+    fun resetPassword(@PathVariable username: String, @RequestBody body: Map<String, String>) {
+        val newPassword = body["password"] ?: throw IllegalArgumentException("password is required")
+        if (newPassword.length < 8) throw IllegalArgumentException("Password must be at least 8 characters")
+        autheliaUserService.resetPassword(username, newPassword)
+    }
+
+    @PostMapping("/{username}/reset-totp")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun resetTotp(@PathVariable username: String) {
+        autheliaUserService.resetTotp(username)
+    }
 }

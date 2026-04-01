@@ -23,4 +23,9 @@ export const UserService = {
         body: JSON.stringify(data),
     }),
     delete: (username: string) => apiFetch<void>(`/users/${username}`, { method: 'DELETE' }),
+    resetPassword: (username: string, password: string) => apiFetch<void>(`/users/${username}/password`, {
+        method: 'PUT',
+        body: JSON.stringify({ password }),
+    }),
+    resetTotp: (username: string) => apiFetch<void>(`/users/${username}/reset-totp`, { method: 'POST' }),
 };

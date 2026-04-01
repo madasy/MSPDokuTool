@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { UserPlus, Trash2, Loader2, X, ShieldCheck, User } from 'lucide-react';
+import { UserPlus, Trash2, Loader2, X, ShieldCheck, User, KeyRound, ShieldOff } from 'lucide-react';
 import { UserService, type AutheliaUser, type CreateUserRequest } from '../services/UserService';
 import { TenantService } from '../services/TenantService';
 import { useToast } from '../components/ui/Toast';
@@ -11,6 +11,7 @@ export default function UserManagementPage() {
     const queryClient = useQueryClient();
     const { addToast } = useToast();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [resetPasswordUser, setResetPasswordUser] = useState<string | null>(null);
 
     const { data: tenants } = useQuery({
         queryKey: ['tenants'],
@@ -34,6 +35,16 @@ export default function UserManagementPage() {
         },
         onError: (err: Error) => {
             addToast({ type: 'error', title: 'Fehler beim Löschen', message: err.message });
+        },
+    });
+
+    const resetTotpMutation = useMutation({
+        mutationFn: (username: string) => UserService.resetTotp(username),
+        onSuccess: () => {
+            addToast({ type: 'success', title: '2FA zurückgesetzt', message: 'Der Benutzer muss sich beim nächsten Login neu registrieren.' });
+        },
+        onError: (err: Error) => {
+            addToast({ type: 'error', title: 'Fehler beim 2FA-Reset', message: err.message });
         },
     });
 
@@ -111,10 +122,29 @@ export default function UserManagementPage() {
                     <UserTable
                         users={tenantUsers}
                         onDelete={(username) => deleteMutation.mutate(username)}
+                        onResetPassword={(username) => setResetPasswordUser(username)}
+                        onResetTotp={(username) => {
+                            if (confirm(`2FA für "${username}" wirklich zurücksetzen?`)) {
+                                resetTotpMutation.mutate(username);
+                            }
+                        }}
                         deletingUsername={deleteMutation.isPending ? (deleteMutation.variables as string) : undefined}
                     />
                 )}
             </div>
+
+            {/* Reset Password Modal */}
+            {resetPasswordUser && (
+                <ResetPasswordModal
+                    username={resetPasswordUser}
+                    onClose={() => setResetPasswordUser(null)}
+                    onSuccess={() => {
+                        setResetPasswordUser(null);
+                        addToast({ type: 'success', title: 'Passwort zurückgesetzt' });
+                    }}
+                    onError={(msg) => addToast({ type: 'error', title: 'Fehler', message: msg })}
+                />
+            )}
 
             {/* Create Modal */}
             {isCreateModalOpen && tenantIdentifier && (
@@ -139,11 +169,15 @@ function UserTable({
     users,
     readOnly = false,
     onDelete,
+    onResetPassword,
+    onResetTotp,
     deletingUsername,
 }: {
     users: AutheliaUser[];
     readOnly?: boolean;
     onDelete?: (username: string) => void;
+    onResetPassword?: (username: string) => void;
+    onResetTotp?: (username: string) => void;
     deletingUsername?: string;
 }) {
     return (
@@ -155,7 +189,7 @@ function UserTable({
                         <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Name</th>
                         <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 dark:text-slate-400">E-Mail</th>
                         <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Gruppen</th>
-                        {!readOnly && <th className="py-2 px-3" />}
+                        {!readOnly && <th className="py-2 px-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">Aktionen</th>}
                     </tr>
                 </thead>
                 <tbody>
@@ -173,16 +207,32 @@ function UserTable({
                             </td>
                             {!readOnly && (
                                 <td className="py-2.5 px-3 text-right">
-                                    <button
-                                        onClick={() => onDelete?.(user.username)}
-                                        disabled={deletingUsername === user.username}
-                                        className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
-                                        title="Benutzer löschen"
-                                    >
-                                        {deletingUsername === user.username
-                                            ? <Loader2 size={14} className="animate-spin" />
-                                            : <Trash2 size={14} />}
-                                    </button>
+                                    <div className="flex items-center justify-end gap-1">
+                                        <button
+                                            onClick={() => onResetPassword?.(user.username)}
+                                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                            title="Passwort zurücksetzen"
+                                        >
+                                            <KeyRound size={14} />
+                                        </button>
+                                        <button
+                                            onClick={() => onResetTotp?.(user.username)}
+                                            className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
+                                            title="2FA zurücksetzen"
+                                        >
+                                            <ShieldOff size={14} />
+                                        </button>
+                                        <button
+                                            onClick={() => onDelete?.(user.username)}
+                                            disabled={deletingUsername === user.username}
+                                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
+                                            title="Benutzer löschen"
+                                        >
+                                            {deletingUsername === user.username
+                                                ? <Loader2 size={14} className="animate-spin" />
+                                                : <Trash2 size={14} />}
+                                        </button>
+                                    </div>
                                 </td>
                             )}
                         </tr>
@@ -338,6 +388,97 @@ function CreateUserModal({
                         >
                             {isSubmitting ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
                             Erstellen
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+/* --- ResetPasswordModal --- */
+
+function ResetPasswordModal({
+    username,
+    onClose,
+    onSuccess,
+    onError,
+}: {
+    username: string;
+    onClose: () => void;
+    onSuccess: () => void;
+    onError: (msg: string) => void;
+}) {
+    const [password, setPassword] = useState('');
+    const [confirm, setConfirm] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (password.length < 8) {
+            onError('Passwort muss mindestens 8 Zeichen lang sein.');
+            return;
+        }
+        if (password !== confirm) {
+            onError('Passwörter stimmen nicht überein.');
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            await UserService.resetPassword(username, password);
+            onSuccess();
+        } catch (err) {
+            onError((err as Error).message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm mx-4">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                    <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                        Passwort zurücksetzen: {username}
+                    </h2>
+                    <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                        <X size={16} className="text-slate-400" />
+                    </button>
+                </div>
+                <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+                    <div>
+                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                            Neues Passwort
+                        </label>
+                        <input
+                            type="password"
+                            required
+                            minLength={8}
+                            className="input w-full"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            placeholder="Mindestens 8 Zeichen"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                            Passwort bestätigen
+                        </label>
+                        <input
+                            type="password"
+                            required
+                            className="input w-full"
+                            value={confirm}
+                            onChange={e => setConfirm(e.target.value)}
+                            placeholder="Passwort wiederholen"
+                        />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                        <button type="button" onClick={onClose} className="btn-secondary text-xs">
+                            Abbrechen
+                        </button>
+                        <button type="submit" disabled={isSubmitting} className="btn-primary text-xs">
+                            {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : 'Zurücksetzen'}
                         </button>
                     </div>
                 </form>
