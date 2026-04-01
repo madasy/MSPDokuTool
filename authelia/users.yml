@@ -9,7 +9,7 @@ users:
   admin:
     displayname: "Admin User"
     email: "admin@mspdoku.local"
-    password: "$2b$12$LJ3m4ys3Lg3CG1HHkNwOCeSMOPkz5El8.SyDCy5k5PI0aPhxQ7x2O"
+    password: "$2b$12$qnH8d7XbqIV4U7Uew1jHLOC2sW/ejWBci1iZ3eGSA3ZtaATfRO/ee"
     groups:
       - admins
       - technicians
@@ -17,6 +17,6 @@ users:
   technician:
     displayname: "Techniker"
     email: "tech@mspdoku.local"
-    password: "$2b$12$LJ3m4ys3Lg3CG1HHkNwOCeSMOPkz5El8.SyDCy5k5PI0aPhxQ7x2O"
+    password: "$2b$12$qnH8d7XbqIV4U7Uew1jHLOC2sW/ejWBci1iZ3eGSA3ZtaATfRO/ee"
     groups:
       - technicians
