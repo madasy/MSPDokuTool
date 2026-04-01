@@ -6,7 +6,7 @@ server:
   address: 'tcp://:9091'
 
 log:
-  level: debug
+  level: info
 
 totp:
   issuer: 'MSP DokuTool'
@@ -41,17 +41,31 @@ notifier:
   filesystem:
     filename: /config/notification.txt
 
+# Access control:
+# - Admins and technicians: password only (one_factor)
+# - Tenant customer users: password + TOTP (two_factor)
+#
+# How it works: default_policy is one_factor so everyone can log in
+# with just a password. Then subject-based rules UPGRADE tenant users
+# to require two_factor on their next request after first-factor auth.
 access_control:
-  default_policy: two_factor
+  default_policy: one_factor
   rules:
-    # Admins — one factor only
+    # Admins — explicitly one_factor (matches first, stops evaluation)
     - domain: '127.0.0.1'
       subject:
         - ['group:admins']
       policy: one_factor
 
-    # Technicians — one factor only
+    # Technicians — explicitly one_factor
     - domain: '127.0.0.1'
       subject:
         - ['group:technicians']
       policy: one_factor
+
+    # Tenant customer users — must complete 2FA after password login
+    # All tenant users get the 'tenant_users' group when created
+    - domain: '127.0.0.1'
+      subject:
+        - ['group:tenant_users']
+      policy: two_factor

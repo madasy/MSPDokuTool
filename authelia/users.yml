@@ -18,3 +18,4 @@ users:
     password: $2b$12$hRDooLgM8jc5G4tLLR9oA.xYZZr9O6EaOabpDfmGWcWtsZk/wPTFa
     groups:
     - tenant:igeeks
+    - tenant_users

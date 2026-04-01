@@ -58,11 +58,17 @@ class AutheliaUserService(
 
         val hashedPassword = encodePassword(request.password)
 
+        // Ensure tenant users always have the 'tenant_users' group for 2FA policy
+        val groups = request.groups.toMutableList()
+        if (groups.any { it.startsWith("tenant:") } && !groups.contains("tenant_users")) {
+            groups.add("tenant_users")
+        }
+
         val userEntry = linkedMapOf<String, Any>(
             "displayname" to request.displayname,
             "email" to request.email,
             "password" to hashedPassword,
-            "groups" to request.groups
+            "groups" to groups
         )
 
         users[request.username] = userEntry
