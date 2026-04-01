@@ -36,7 +36,7 @@ export default function Layout() {
     useEffect(() => { setMobileMenuOpen(false); }, [location.pathname]);
 
     return (
-        <div className="flex h-screen font-sans overflow-hidden bg-slate-50">
+        <div className="flex h-screen font-sans overflow-hidden bg-[var(--bg)]">
             {/* Command Palette */}
             <CommandPalette />
 
@@ -57,7 +57,7 @@ export default function Layout() {
                     onClick={() => navigate('/')}
                 >
                     <div className="font-semibold text-white text-lg tracking-tight flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 shadow-[0_0_20px_rgba(20,184,166,0.3)]" />
+                        <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center text-white text-xs font-bold">D</div>
                         <div className="flex flex-col leading-tight">
                             <span>Doku</span>
                             <span className="text-[10px] uppercase tracking-[0.2em] text-white/40">MSP Suite</span>
@@ -127,10 +127,10 @@ export default function Layout() {
             </aside>
 
             {/* Main Content Wrapper */}
-            <div className="flex-1 flex flex-col min-w-0 h-full bg-slate-50 relative">
+            <div className="flex-1 flex flex-col min-w-0 h-full bg-[var(--bg)] dark:bg-slate-900 relative">
 
                 {/* Header — simplified: breadcrumbs + user profile only */}
-                <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-4 lg:px-8 shadow-sm flex-shrink-0 z-10 sticky top-0">
+                <header className="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 lg:px-8 flex-shrink-0 z-10 sticky top-0">
                     {/* Left: Hamburger + Breadcrumbs */}
                     <div className="flex items-center gap-3">
                         <button
@@ -158,7 +158,7 @@ export default function Layout() {
 
                 {/* Content Area */}
                 <main className="flex-1 overflow-auto p-0 relative scroll-smooth">
-                    <div className="app-shell min-h-full">
+                    <div className="min-h-full">
                         <Outlet />
                     </div>
                 </main>
@@ -377,7 +377,7 @@ function NavItem({ to, icon, label, end }: { to: string; icon: React.ReactNode; 
                     </span>
                     <span>{label}</span>
                     {isActive && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-primary-400 rounded-r-full shadow-[0_0_10px_rgba(45,212,191,0.5)]"></div>
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary-400 rounded-r-full"></div>
                     )}
                 </>
             )}

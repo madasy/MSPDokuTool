@@ -63,10 +63,10 @@ export default function TenantDashboardPage() {
 
             {/* Quick Navigation */}
             <div className="card overflow-hidden">
-                <div className="px-5 py-4 border-b border-white/70 dark:border-white/10">
+                <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-700">
                     <h2 className="font-semibold text-slate-900 dark:text-white">Schnellzugriff</h2>
                 </div>
-                <div className="divide-y divide-white/70 dark:divide-white/10">
+                <div className="divide-y divide-slate-200 dark:divide-slate-700">
                     <QuickLink icon={<Server size={16} />} label="Racks & Hardware" to={`/tenants/${tenantId}/racks`} />
                     <QuickLink icon={<Network size={16} />} label="IP-Plan & Netzwerk" to={`/tenants/${tenantId}/network`} />
                 </div>
@@ -86,7 +86,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 
 function QuickLink({ icon, label, to }: { icon: React.ReactNode; label: string; to: string }) {
     return (
-        <Link to={to} className="px-5 py-4 flex items-center gap-4 hover:bg-white/70 dark:hover:bg-white/5 transition-colors group">
+        <Link to={to} className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
             <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400 group-hover:bg-primary-50 dark:group-hover:bg-primary-900/20 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                 {icon}
             </div>

@@ -55,7 +55,7 @@ export default function NetworkPage() {
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="px-6 py-4 bg-white/75 dark:bg-slate-800/75 backdrop-blur border-b border-white/60 dark:border-white/10 flex items-center justify-between">
+            <div className="px-6 py-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-slate-800 dark:text-white">IP-Plan</h1>
                     <p className="text-xs text-slate-500 dark:text-slate-400">Netzwerk-Dokumentation · {subnets?.length || 0} Subnetze</p>
@@ -158,7 +158,7 @@ function SubnetTable({ subnet, searchQuery }: { subnet: Subnet; searchQuery: str
     return (
         <div className="card overflow-hidden">
             {/* Subnet Header */}
-            <div className="px-5 py-3 bg-white/70 dark:bg-slate-700/50 border-b border-white/70 dark:border-white/10 flex items-center justify-between">
+            <div className="px-5 py-3 bg-white dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <button onClick={() => setExpanded(!expanded)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white">
                         {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -177,7 +177,7 @@ function SubnetTable({ subnet, searchQuery }: { subnet: Subnet; searchQuery: str
             </div>
 
             {/* Progress Bar */}
-            <div className="px-5 py-1.5 border-b border-white/70 dark:border-white/10">
+            <div className="px-5 py-1.5 border-b border-slate-200 dark:border-slate-700">
                 <div className="flex h-1.5 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700">
                     <div
                         className={cn(
@@ -202,7 +202,7 @@ function SubnetTable({ subnet, searchQuery }: { subnet: Subnet; searchQuery: str
                     ) : (
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-white/70 dark:border-white/10 bg-white/60 dark:bg-slate-800/60">
+                                <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
                                     <th className="table-header-cell w-36">IP</th>
                                     <th className="table-header-cell">Hostname</th>
                                     <th className="table-header-cell w-40">MAC</th>
@@ -212,7 +212,7 @@ function SubnetTable({ subnet, searchQuery }: { subnet: Subnet; searchQuery: str
                                     <th className="table-header-cell w-16"></th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-white/70 dark:divide-white/10">
+                            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                                 {filteredIps?.map(ip => (
                                     <IpTableRow
                                         key={ip.id}
@@ -237,7 +237,7 @@ function IpTableRow({ ip, onUpdate, onDelete }: { ip: IpAddress; onUpdate: (data
     const statusOption = STATUS_OPTIONS.find(s => s.value === ip.status) || STATUS_OPTIONS[0];
 
     return (
-        <tr className="hover:bg-white/70 dark:hover:bg-white/5 group">
+        <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50 group">
             {/* IP */}
             <td className="table-cell font-mono font-medium text-slate-800 dark:text-white">
                 <div className="flex items-center gap-1.5">

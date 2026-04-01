@@ -54,20 +54,20 @@ export default function DashboardPage() {
 
             {/* Recent Changes */}
             <div className="card overflow-hidden">
-                <div className="px-5 py-4 border-b border-white/70 dark:border-white/10 flex items-center justify-between">
+                <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                     <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                         <Clock size={16} className="text-slate-500 dark:text-slate-400" />
                         Letzte Änderungen
                     </h2>
                 </div>
-                <div className="divide-y divide-white/70 dark:divide-white/10">
+                <div className="divide-y divide-slate-200 dark:divide-slate-700">
                     {activityLoading ? (
                         <div className="px-5 py-8 text-center">
                             <Loader2 size={20} className="animate-spin text-slate-400 mx-auto" />
                         </div>
                     ) : activity && activity.length > 0 ? (
                         activity.map((entry, idx) => (
-                            <div key={idx} className="px-5 py-3 hover:bg-white/70 dark:hover:bg-white/5 transition-colors flex items-center gap-4">
+                            <div key={idx} className="px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-4">
                                 <div className="w-1.5 h-1.5 rounded-full bg-primary-400 flex-shrink-0" />
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-slate-900 dark:text-white truncate">

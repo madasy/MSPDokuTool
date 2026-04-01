@@ -47,8 +47,8 @@ export default function DatacenterPage() {
     return (
         <div className="flex h-full">
             {/* Left: Range List */}
-            <div className="w-72 border-r border-white/60 bg-white/80 backdrop-blur flex-shrink-0 flex flex-col">
-                <div className="p-4 border-b border-white/70">
+            <div className="w-72 border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0 flex flex-col">
+                <div className="p-4 border-b border-slate-200 dark:border-slate-700">
                     <div className="flex items-center justify-between mb-3">
                         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
                             <Globe size={16} className="text-primary-500" />
@@ -65,10 +65,10 @@ export default function DatacenterPage() {
                             key={range.id}
                             onClick={() => setSelectedRange(range)}
                             className={cn(
-                                'w-full text-left px-4 py-3 border-b border-white/70 flex items-center gap-3 transition-colors',
+                                'w-full text-left px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3 transition-colors',
                                 active?.id === range.id
                                     ? 'bg-primary-50 border-l-2 border-l-primary-400'
-                                    : 'hover:bg-white/70'
+                                    : 'hover:bg-slate-50 dark:hover:bg-slate-700/50'
                             )}
                         >
                             <div className="flex-1">
@@ -89,7 +89,7 @@ export default function DatacenterPage() {
             <div className="flex-1 flex flex-col min-w-0">
                 {active ? (
                     <>
-                        <div className="px-6 py-4 bg-white/75 backdrop-blur border-b border-white/60 flex items-center justify-between">
+                        <div className="px-6 py-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                             <div>
                                 <h2 className="text-lg font-semibold text-slate-800 font-mono">{active.cidr}</h2>
                                 <p className="text-xs text-slate-500">{active.description}</p>

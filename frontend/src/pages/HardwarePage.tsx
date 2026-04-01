@@ -96,7 +96,7 @@ export default function HardwarePage() {
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="px-6 py-4 bg-white/75 dark:bg-slate-800/75 backdrop-blur border-b border-white/60 dark:border-white/10 flex items-center justify-between">
+            <div className="px-6 py-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-semibold text-slate-800 dark:text-white">Hardware</h1>
                     <p className="text-xs text-slate-500 dark:text-slate-400">{devices.length} Geräte · {devices.filter(d => d.status === 'ACTIVE').length} aktiv</p>
@@ -132,7 +132,7 @@ export default function HardwarePage() {
             <div className="flex-1 overflow-auto">
                 <table className="w-full text-sm">
                     <thead>
-                        <tr className="border-b border-white/70 dark:border-white/10 bg-white/60 dark:bg-slate-800/60">
+                        <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
                             <th className="table-header-cell w-12"></th>
                             <th className="table-header-cell">Name</th>
                             <th className="table-header-cell w-24">Typ</th>
@@ -145,7 +145,7 @@ export default function HardwarePage() {
                             <th className="table-header-cell w-20">Aktionen</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/70 dark:divide-white/10">
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                         {filtered.map(device => (
                             editingId === device.id ? (
                                 <EditableRow key={device.id} device={device} onSave={handleSaveEdit} onCancel={() => setEditingId(null)} />
@@ -172,7 +172,7 @@ export default function HardwarePage() {
 
 function DeviceRow({ device, onEdit, onDelete }: { device: HardwareDevice; onEdit: () => void; onDelete: () => void }) {
     return (
-        <tr className="hover:bg-white/70 dark:hover:bg-white/5 group">
+        <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50 group">
             <td className="table-cell">
                 <span className="text-slate-400">{TYPE_ICONS[device.deviceType] || <Box size={14} />}</span>
             </td>
