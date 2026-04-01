@@ -149,15 +149,7 @@ export default function Layout() {
 
                     {/* Right: User Profile */}
                     <div className="flex items-center">
-                        <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-100/80 p-1.5 pr-4 rounded-full transition-colors border border-transparent hover:border-slate-200/50">
-                            <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-primary-100 to-primary-50 text-primary-700 flex items-center justify-center text-xs font-bold border border-primary-100 shadow-sm">
-                                AM
-                            </div>
-                            <div className="hidden md:block text-xs text-left">
-                                <p className="font-semibold text-slate-700">Anish M.</p>
-                                <p className="text-slate-400 font-medium text-[10px]">Admin</p>
-                            </div>
-                        </div>
+                        <UserProfile />
                     </div>
                 </header>
 
@@ -387,5 +379,31 @@ function NavItem({ to, icon, label, end }: { to: string; icon: React.ReactNode; 
                 </>
             )}
         </NavLink>
+    );
+}
+
+function UserProfile() {
+    const { data: user } = useQuery({
+        queryKey: ['auth', 'me'],
+        queryFn: () => fetch('/api/v1/auth/me').then(r => r.ok ? r.json() : null),
+        staleTime: 60000,
+        retry: false,
+    });
+
+    const displayName = user?.displayName || user?.username || 'User';
+    const initials = displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+    const groups = (user?.groups as string[]) || [];
+    const role = groups.includes('admins') ? 'Admin' : groups.includes('technicians') ? 'Techniker' : 'User';
+
+    return (
+        <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-800 p-1.5 pr-4 rounded-full transition-colors border border-transparent hover:border-slate-200/50 dark:hover:border-slate-700">
+            <div className="h-9 w-9 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 flex items-center justify-center text-xs font-bold border border-primary-200 dark:border-primary-800">
+                {initials}
+            </div>
+            <div className="hidden md:block text-xs text-left">
+                <p className="font-semibold text-slate-700 dark:text-slate-200">{displayName}</p>
+                <p className="text-slate-400 font-medium text-[10px]">{role}</p>
+            </div>
+        </div>
     );
 }

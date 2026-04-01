@@ -1,0 +1,22 @@
+---
+# MSP DokuTool — Test Users
+# Password for all users: admin123
+#
+# To add users: generate hash with
+#   docker run --rm authelia/authelia:latest crypto hash generate bcrypt --password 'yourpassword'
+
+users:
+  admin:
+    displayname: "Admin User"
+    email: "admin@mspdoku.local"
+    password: "$2b$12$LJ3m4ys3Lg3CG1HHkNwOCeSMOPkz5El8.SyDCy5k5PI0aPhxQ7x2O"
+    groups:
+      - admins
+      - technicians
+
+  technician:
+    displayname: "Techniker"
+    email: "tech@mspdoku.local"
+    password: "$2b$12$LJ3m4ys3Lg3CG1HHkNwOCeSMOPkz5El8.SyDCy5k5PI0aPhxQ7x2O"
+    groups:
+      - technicians

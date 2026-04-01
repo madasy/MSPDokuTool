@@ -16,6 +16,18 @@ services:
       timeout: 5s
       retries: 5
 
+  authelia:
+    image: authelia/authelia:latest
+    container_name: mspdoku-authelia
+    volumes:
+      - ./authelia:/config
+      - ./certs:/certs:ro
+    environment:
+      TZ: Europe/Zurich
+    expose:
+      - "9091"
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
@@ -38,8 +50,12 @@ services:
     container_name: mspdoku-frontend
     ports:
       - "3000:80"
+      - "3443:443"
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
     depends_on:
       - backend
+      - authelia
 
 volumes:
   postgres_data:
