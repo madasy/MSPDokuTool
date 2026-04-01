@@ -1,7 +1,5 @@
 import { Activity, Server, Users, Network, AlertTriangle, Clock, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import ContractAlerts from '../components/ui/ContractAlerts';
-
 // Mock data for global dashboard
 const STATS = [
     { label: 'Tenants', value: 12, icon: <Users size={20} />, color: 'text-sky-700 bg-sky-100', link: '/tenants' },
@@ -32,9 +30,6 @@ export default function DashboardPage() {
                 <h1 className="page-title">Dashboard</h1>
                 <p className="page-subtitle">Übersicht aller MSP-Dokumentationen</p>
             </div>
-
-            {/* Contract Expiry Alerts */}
-            <ContractAlerts />
 
             {/* KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

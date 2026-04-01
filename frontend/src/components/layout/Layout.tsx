@@ -1,4 +1,4 @@
-import { LayoutDashboard, Network, Server, Users, Settings, LogOut, ChevronRight, Star, Globe, Search, ChevronsUpDown, Check, Building, Menu, X, StarOff, Cpu, Monitor } from 'lucide-react';
+import { LayoutDashboard, Network, Server, Users, LogOut, ChevronRight, Star, Globe, Search, ChevronsUpDown, Check, Building, Menu, X, StarOff, Cpu } from 'lucide-react';
 import { NavLink, Outlet, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TenantService } from '../../services/TenantService';
@@ -95,7 +95,6 @@ export default function Layout() {
                                 <SectionHeader label="Netzwerk" />
                                 <div className="space-y-1 mt-2">
                                     <NavItem to={`/tenants/${tenantId}/network`} icon={<Network size={18} />} label="IP-Plan" />
-                                    <NavItem to={`/tenants/${tenantId}/switches`} icon={<Monitor size={18} />} label="Switches" />
                                 </div>
                             </div>
 
@@ -116,10 +115,7 @@ export default function Layout() {
                         </>
                     )}
 
-                    {/* Settings (Always visible) */}
-                    <div className="mt-auto">
-                        <NavItem to="/settings" icon={<Settings size={18} />} label="Einstellungen" />
-                    </div>
+
                 </nav>
 
                 {/* Footer */}

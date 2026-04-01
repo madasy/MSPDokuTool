@@ -11,9 +11,7 @@ import TenantDashboardPage from './pages/TenantDashboardPage';
 import RackListPage from './pages/RackListPage';
 import HardwarePage from './pages/HardwarePage';
 import NetworkPage from './pages/NetworkPage';
-import SwitchesPage from './pages/SwitchesPage';
 import DatacenterPage from './pages/DatacenterPage';
-import SettingsPage from './pages/SettingsPage';
 
 const queryClient = new QueryClient();
 
@@ -31,14 +29,12 @@ function App() {
                     <Route index element={<ErrorBoundary><DashboardPage /></ErrorBoundary>} />
                     <Route path="tenants" element={<ErrorBoundary><TenantListPage /></ErrorBoundary>} />
                     <Route path="datacenter" element={<ErrorBoundary><DatacenterPage /></ErrorBoundary>} />
-                    <Route path="settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
 
                     {/* Tenant-scoped routes */}
                     <Route path="tenants/:tenantId" element={<ErrorBoundary><TenantDashboardPage /></ErrorBoundary>} />
                     <Route path="tenants/:tenantId/racks" element={<ErrorBoundary><RackListPage /></ErrorBoundary>} />
                     <Route path="tenants/:tenantId/hardware" element={<ErrorBoundary><HardwarePage /></ErrorBoundary>} />
                     <Route path="tenants/:tenantId/network" element={<ErrorBoundary><NetworkPage /></ErrorBoundary>} />
-                    <Route path="tenants/:tenantId/switches" element={<ErrorBoundary><SwitchesPage /></ErrorBoundary>} />
                   </Route>
                 </Routes>
               </BrowserRouter>
@@ -51,4 +47,3 @@ function App() {
 }
 
 export default App;
-
