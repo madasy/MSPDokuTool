@@ -1,93 +1,134 @@
-# MSPDokuTool
+# MSP DokuTool
 
+IT infrastructure documentation tool for Managed Service Providers. Built to fill the gap that SDP MSP doesn't cover: **network documentation (IPAM)** and **visual infrastructure views (rack diagrams)**.
 
+## Quick Start
 
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.igeeks.ch/igeeks/igeeks-apps/mspdokutool.git
-git branch -M main
-git push -uf origin main
+```bash
+docker compose up
 ```
 
-## Integrate with your tools
+Open **http://localhost:3000**
 
-* [Set up project integrations](https://gitlab.igeeks.ch/igeeks/igeeks-apps/mspdokutool/-/settings/integrations)
+That's it. PostgreSQL, backend, and frontend all start automatically.
 
-## Collaborate with your team
+## What It Does
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+- **Multi-tenant** -- switch between customers via the sidebar dropdown
+- **Network / IPAM** -- subnets, VLANs, IP addresses with utilization tracking
+- **Rack Diagrams** -- visual rack layouts with device positioning
+- **Hardware Inventory** -- servers, switches, firewalls, APs with search and filtering
+- **Datacenter / Public IPs** -- manage public IP ranges across all customers
+- **Dashboard** -- aggregate stats and recent activity across all tenants
 
-## Test and Deploy
+## Tech Stack
 
-Use the built-in continuous integration in GitLab.
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19, TypeScript, Vite 7, Tailwind CSS 4, React Query 5 |
+| Backend | Kotlin, Spring Boot 3.3, Spring Data JPA |
+| Database | PostgreSQL 16 |
+| Migrations | Flyway |
+| Containerization | Docker, nginx |
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+## Architecture
 
-***
+```
+Browser :3000 --> nginx (frontend)
+                    |
+                    |--> /api/* --> Spring Boot :8080 --> PostgreSQL :5432
+                    |
+                    |--> /*    --> React SPA (static files)
+```
 
-# Editing this README
+Three Docker containers:
+- **mspdoku-frontend** -- nginx serving the React build + proxying `/api` to backend
+- **mspdoku-backend** -- Spring Boot REST API
+- **mspdoku-postgres** -- PostgreSQL 16
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+## Development
 
-## Suggestions for a good README
+### Run with Docker (recommended)
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+```bash
+docker compose up --build
+```
 
-## Name
-Choose a self-explaining name for your project.
+### Run locally (without Docker)
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+**Prerequisites:** Java 21, Node.js 22, PostgreSQL 16
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+```bash
+# 1. Start PostgreSQL (or use Docker for just the DB)
+docker compose up -d postgres
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+# 2. Start backend
+cd backend
+./gradlew bootRun
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+# 3. Start frontend (in another terminal)
+cd frontend
+npm install
+npm run dev
+```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+Frontend dev server runs at `http://localhost:5173` with API proxy to `localhost:8080`.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+### Reset database
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+```bash
+docker compose down -v
+docker compose up
+```
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## API Endpoints
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+### Global
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/dashboard/stats` | Aggregate counts (tenants, devices, subnets, IPs) |
+| GET | `/api/v1/dashboard/activity?limit=20` | Recent changes across all tenants |
+| GET | `/api/v1/tenants` | List all tenants |
+| POST | `/api/v1/tenants` | Create tenant |
+| GET | `/api/v1/datacenter/ip-ranges` | List public IP ranges |
+| POST | `/api/v1/datacenter/ip-ranges` | Create public IP range |
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+### Tenant-scoped
 
-## License
-For open source projects, say how it is licensed.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/tenants/{id}/summary` | Infrastructure summary for tenant |
+| GET | `/api/v1/devices?tenantId={id}` | Devices for tenant |
+| GET | `/api/v1/racks?tenantId={id}` | Racks with devices for tenant |
+| GET | `/api/v1/network/subnets?tenantId={id}` | Subnets for tenant |
+| GET | `/api/v1/network/subnets/{id}/ips` | IP addresses in subnet |
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+## Project Structure
+
+```
+MSPDokuTool/
+  backend/
+    src/main/kotlin/com/msp/doku/
+      controller/     # REST endpoints
+      service/        # Business logic
+      repository/     # JPA repositories
+      domain/         # Entities
+      dto/            # Data transfer objects
+      config/         # Security, CORS
+    src/main/resources/
+      db/migration/   # Flyway SQL migrations (V1-V6)
+  frontend/
+    src/
+      pages/          # Page components
+      components/     # Reusable UI components
+      services/       # API client wrappers
+      hooks/          # Custom React hooks
+  docker-compose.yml
+```
+
+## Complements (not replaces)
+
+- **ServiceDesk Plus MSP** -- contracts, licenses, asset tracking, ticketing
+- **Confluence** -- knowledge base, procedures, documentation
+- **Bitwarden** -- password and credential management
