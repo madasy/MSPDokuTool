@@ -17,6 +17,7 @@ import SwitchesPage from './pages/SwitchesPage';
 import AccessPointsPage from './pages/AccessPointsPage';
 import DocumentationPage from './pages/DocumentationPage';
 import FirewallPage from './pages/FirewallPage';
+import UserManagementPage from './pages/UserManagementPage';
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ function App() {
                     <Route path="tenants/:tenantId/firewall" element={<ErrorBoundary><FirewallPage /></ErrorBoundary>} />
                     <Route path="tenants/:tenantId/access-points" element={<ErrorBoundary><AccessPointsPage /></ErrorBoundary>} />
                     <Route path="tenants/:tenantId/docs" element={<ErrorBoundary><DocumentationPage /></ErrorBoundary>} />
+                    <Route path="tenants/:tenantId/users" element={<ErrorBoundary><UserManagementPage /></ErrorBoundary>} />
                   </Route>
                 </Routes>
               </BrowserRouter>
