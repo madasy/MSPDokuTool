@@ -52,7 +52,9 @@ class DeviceService(
             heightU = request.heightU,
             positionU = request.positionU,
             status = request.status,
-            rack = rack
+            rack = rack,
+            rj45Ports = request.rj45Ports,
+            sfpPorts = request.sfpPorts
         )
         return deviceRepository.save(device).toDeviceDto()
     }
@@ -70,6 +72,8 @@ class DeviceService(
         device.heightU = request.heightU
         device.positionU = request.positionU
         device.status = request.status
+        device.rj45Ports = request.rj45Ports
+        device.sfpPorts = request.sfpPorts
 
         if (request.rackId != null) {
             val rack = rackRepository.findById(request.rackId).orElseThrow { IllegalArgumentException("Rack not found") }
