@@ -31,17 +31,6 @@ class RackService(
     }
 
     @Transactional
-    fun createRack(request: CreateRackRequest): RackDto {
-         // Mocking Room lookup for MVP since we don't have Room API yet
-         // In real app, we must validate roomId
-         // For now, let's create a dummy room if needed or fail if entity requires it.
-         // rack.room is non-nullable in Entity.
-         // WORKAROUND: We need a valid Room ID.
-         throw UnsupportedOperationException("Room creation not yet implemented, cannot create Rack without Room")
-    }
-    
-    // Quick Fix: Create Rack with Room ID
-    @Transactional
     fun createRackWithRoom(request: CreateRackRequest, roomId: UUID): RackDto {
          val room = roomRepository.findById(roomId).orElseThrow{ IllegalArgumentException("Room not found") }
          val rack = Rack(

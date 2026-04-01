@@ -25,16 +25,6 @@ class RackController(
         return rackService.getRack(id)
     }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    fun createRack(@RequestBody request: CreateRackRequest): RackDto {
-        // Mock Room ID for now if not provided, or fail
-        // For MVP testing, let's allow creating rack without room if we modify Service to allow it?
-        // Service expects Room. Let's create a dummy endpoint or use existing logic.
-        // Assuming user sends a valid RoomId, or we fix this later.
-        throw UnsupportedOperationException("Need Room ID to create Rack")
-    }
-
     @PostMapping("/{roomId}")
     @ResponseStatus(HttpStatus.CREATED)
     fun createRackInRoom(@PathVariable roomId: UUID, @RequestBody request: CreateRackRequest): RackDto {
