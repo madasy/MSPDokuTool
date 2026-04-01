@@ -15,3 +15,11 @@ data class CreateTenantRequest(
     val name: String,
     val identifier: String
 )
+
+data class TenantSummaryDto(
+    val deviceCount: Long,
+    val devicesByType: Map<String, Long>,
+    val subnetCount: Long,
+    val ipUtilization: Double,
+    val rackCount: Long
+)
