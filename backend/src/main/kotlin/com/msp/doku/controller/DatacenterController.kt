@@ -1,7 +1,9 @@
 package com.msp.doku.controller
 
 import com.msp.doku.dto.CreatePublicIpRangeRequest
+import com.msp.doku.dto.PublicIpAssignmentDto
 import com.msp.doku.dto.PublicIpRangeDto
+import com.msp.doku.dto.UpdateIpAssignmentRequest
 import com.msp.doku.dto.UpdatePublicIpRangeRequest
 import com.msp.doku.service.PublicIpRangeService
 import org.springframework.http.HttpStatus
@@ -34,5 +36,25 @@ class DatacenterController(
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: UUID) {
         publicIpRangeService.delete(id)
+    }
+
+    @GetMapping("/ip-ranges/{rangeId}/assignments")
+    fun getAssignments(@PathVariable rangeId: UUID): List<PublicIpAssignmentDto> {
+        return publicIpRangeService.getAssignments(rangeId)
+    }
+
+    @PostMapping("/ip-ranges/{rangeId}/generate")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun generateIps(@PathVariable rangeId: UUID): List<PublicIpAssignmentDto> {
+        return publicIpRangeService.generateIpsForRange(rangeId)
+    }
+
+    @PutMapping("/ip-ranges/{rangeId}/assignments/{ipAddress}")
+    fun updateAssignment(
+        @PathVariable rangeId: UUID,
+        @PathVariable ipAddress: String,
+        @RequestBody request: UpdateIpAssignmentRequest
+    ): PublicIpAssignmentDto {
+        return publicIpRangeService.updateAssignment(rangeId, ipAddress, request)
     }
 }
