@@ -18,6 +18,16 @@ class AutheliaUserService(
 ) {
     private val passwordEncoder = BCryptPasswordEncoder(12)
 
+    // Authelia expects $2b$ prefix, Spring BCrypt generates $2a$ — functionally identical but we convert
+    private fun encodePassword(password: String): String {
+        val hash = encodePassword(password)
+        return if (hash.startsWith("\$2a\$")) {
+            "\$2b\$" + hash.substring(4)
+        } else {
+            hash
+        }
+    }
+
     fun getAllUsers(): List<AutheliaUserDto> {
         val data = readUsersFile()
         val users = data["users"] as? Map<String, Map<String, Any>> ?: return emptyList()
@@ -46,7 +56,7 @@ class AutheliaUserService(
             throw IllegalArgumentException("User '${request.username}' already exists")
         }
 
-        val hashedPassword = passwordEncoder.encode(request.password)
+        val hashedPassword = encodePassword(request.password)
 
         val userEntry = linkedMapOf<String, Any>(
             "displayname" to request.displayname,
@@ -96,7 +106,7 @@ class AutheliaUserService(
         val user = (users[username] as? MutableMap<String, Any>)
             ?: throw IllegalArgumentException("User '$username' not found")
 
-        user["password"] = passwordEncoder.encode(newPassword)
+        user["password"] = encodePassword(newPassword)
         users[username] = user
         data["users"] = users
         writeUsersFile(data)
