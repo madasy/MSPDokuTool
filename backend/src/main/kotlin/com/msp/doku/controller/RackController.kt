@@ -16,8 +16,8 @@ class RackController(
 ) {
 
     @GetMapping
-    fun getAllRacks(): List<RackDto> {
-        return rackService.getAllRacks()
+    fun getRacks(@RequestParam tenantId: UUID): List<RackDto> {
+        return rackService.getRacksByTenant(tenantId)
     }
 
     @GetMapping("/{id}")
@@ -34,7 +34,6 @@ class RackController(
     @PostMapping("/{id}/devices")
     @ResponseStatus(HttpStatus.CREATED)
     fun addDevice(@PathVariable id: UUID, @RequestBody request: CreateDeviceRequest): DeviceDto {
-        // Ensure request has rackId set from path
         val enrichedRequest = request.copy(rackId = id)
         return rackService.addDeviceToRack(enrichedRequest)
     }

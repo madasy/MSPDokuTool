@@ -48,6 +48,12 @@ class Device(
 
     var facing: String = "front", // front/rear
 
+    @Column(name = "management_ip")
+    var managementIp: String? = null,
+
+    @Column(name = "mac_address")
+    var macAddress: String? = null,
+
     // If not in Rack
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id")
