@@ -1,36 +1,11 @@
 import { useState } from 'react';
-import { Cpu, Monitor, Shield, Wifi, Box, Plus, Search, Edit2, Trash2, X, Check, Server } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Cpu, Monitor, Shield, Wifi, Box, Plus, Search, Edit2, Trash2, X, Check, Server, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useToast } from '../components/ui/Toast';
-
-// Types
-interface HardwareDevice {
-    id: string;
-    name: string;
-    deviceType: string;
-    model: string;
-    serial: string;
-    ip: string;
-    mac: string;
-    status: 'ACTIVE' | 'PLANNED' | 'STORAGE' | 'RETIRED';
-    rack: string;
-    positionU: number | null;
-    heightU: number;
-    rj45Ports?: number;
-    sfpPorts?: number;
-}
-
-// Mock hardware data
-const MOCK_DEVICES: HardwareDevice[] = [
-    { id: 'd1', name: 'Core-Switch-01', deviceType: 'SWITCH', model: 'HP Aruba 2930F-48G', serial: 'SW-2024-0001', ip: '10.0.0.1', mac: 'AA:BB:CC:11:22:33', status: 'ACTIVE', rack: 'Rack A-01', positionU: 40, heightU: 1 },
-    { id: 'd2', name: 'Firewall-Main', deviceType: 'FIREWALL', model: 'Sophos XGS 4300', serial: 'FW-2023-0042', ip: '10.0.0.254', mac: 'AA:BB:CC:11:22:34', status: 'ACTIVE', rack: 'Rack A-01', positionU: 38, heightU: 1 },
-    { id: 'd3', name: 'ESXi-Host-01', deviceType: 'SERVER', model: 'Dell PowerEdge R750', serial: 'SRV-2024-0012', ip: '10.0.1.10', mac: 'AA:BB:CC:55:66:77', status: 'ACTIVE', rack: 'Rack A-01', positionU: 10, heightU: 2 },
-    { id: 'd4', name: 'ESXi-Host-02', deviceType: 'SERVER', model: 'Dell PowerEdge R750', serial: 'SRV-2024-0013', ip: '10.0.1.11', mac: 'AA:BB:CC:55:66:78', status: 'ACTIVE', rack: 'Rack A-01', positionU: 8, heightU: 2 },
-    { id: 'd5', name: 'NAS Storage', deviceType: 'OTHER', model: 'Synology RS3621xs+', serial: 'NAS-2023-0005', ip: '10.0.1.20', mac: 'AA:BB:CC:88:99:AA', status: 'ACTIVE', rack: 'Rack A-01', positionU: 4, heightU: 4 },
-    { id: 'd6', name: 'WiFi-AP-01', deviceType: 'WIFI_AP', model: 'Unifi U6 Pro', serial: 'AP-2024-0001', ip: '10.0.0.50', mac: 'DD:EE:FF:11:22:33', status: 'ACTIVE', rack: '', positionU: null, heightU: 0 },
-    { id: 'd7', name: 'Patchpanel A', deviceType: 'PATCHPANEL', model: 'Digitus 24-Port Cat6a', serial: 'PP-2024-0001', ip: '', mac: '', status: 'ACTIVE', rack: 'Rack A-01', positionU: 41, heightU: 1 },
-    { id: 'd8', name: 'Switch-Ersatz', deviceType: 'SWITCH', model: 'HP Aruba 2530-24G', serial: 'SW-2024-0010', ip: '', mac: '', status: 'STORAGE', rack: '', positionU: null, heightU: 1 },
-];
+import { DeviceService, type Device, type CreateDeviceRequest } from '../services/DeviceService';
+import { SiteService, type Site } from '../services/SiteService';
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
     SERVER: <Cpu size={14} />,
@@ -60,40 +35,61 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function HardwarePage() {
+    const { tenantId } = useParams<{ tenantId: string }>();
+    const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [devices, setDevices] = useState(MOCK_DEVICES);
     const { addToast } = useToast();
+
+    const { data: devices = [], isLoading } = useQuery({
+        queryKey: ['devices', tenantId],
+        queryFn: () => DeviceService.getAll(tenantId),
+        enabled: !!tenantId,
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => DeviceService.delete(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['devices', tenantId] });
+            addToast({ type: 'info', title: 'Gelöscht', message: 'Gerät wurde entfernt.' });
+        },
+        onError: () => {
+            addToast({ type: 'error', title: 'Fehler', message: 'Gerät konnte nicht gelöscht werden.' });
+        },
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string; data: Partial<CreateDeviceRequest> }) =>
+            DeviceService.update(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['devices', tenantId] });
+            setEditingId(null);
+            addToast({ type: 'success', title: 'Gespeichert', message: 'Gerät wurde aktualisiert.' });
+        },
+        onError: () => {
+            addToast({ type: 'error', title: 'Fehler', message: 'Gerät konnte nicht aktualisiert werden.' });
+        },
+    });
 
     const filtered = devices.filter(d => {
         const matchesSearch = !searchQuery ||
             d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            d.ip.includes(searchQuery) ||
-            d.mac.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            d.serial.toLowerCase().includes(searchQuery.toLowerCase());
+            (d.ip ?? '').includes(searchQuery) ||
+            (d.mac ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (d.serial ?? '').toLowerCase().includes(searchQuery.toLowerCase());
         const matchesType = !filterType || d.deviceType === filterType;
         return matchesSearch && matchesType;
     });
 
-    const handleAddDevice = (device: Omit<HardwareDevice, 'id'>) => {
-        const newDev: HardwareDevice = { ...device, id: `d${Date.now()}` };
-        setDevices(prev => [...prev, newDev]);
-        setShowAddModal(false);
-        addToast({ type: 'success', title: 'Gerät hinzugefügt', message: `${device.name} wurde erstellt.` });
-    };
-
-    const handleSaveEdit = (id: string, updated: Partial<HardwareDevice>) => {
-        setDevices(prev => prev.map(d => d.id === id ? { ...d, ...updated } : d));
-        setEditingId(null);
-        addToast({ type: 'success', title: 'Gespeichert', message: 'Gerät wurde aktualisiert.' });
-    };
-
-    const handleDelete = (id: string) => {
-        setDevices(prev => prev.filter(d => d.id !== id));
-        addToast({ type: 'info', title: 'Gelöscht', message: 'Gerät wurde entfernt.' });
-    };
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <Loader2 size={24} className="animate-spin text-slate-400" />
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col h-full">
@@ -150,9 +146,19 @@ export default function HardwarePage() {
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                         {filtered.map(device => (
                             editingId === device.id ? (
-                                <EditableRow key={device.id} device={device} onSave={handleSaveEdit} onCancel={() => setEditingId(null)} />
+                                <EditableRow
+                                    key={device.id}
+                                    device={device}
+                                    onSave={(id, updated) => updateMutation.mutate({ id, data: updated })}
+                                    onCancel={() => setEditingId(null)}
+                                />
                             ) : (
-                                <DeviceRow key={device.id} device={device} onEdit={() => setEditingId(device.id)} onDelete={() => handleDelete(device.id)} />
+                                <DeviceRow
+                                    key={device.id}
+                                    device={device}
+                                    onEdit={() => setEditingId(device.id)}
+                                    onDelete={() => deleteMutation.mutate(device.id)}
+                                />
                             )
                         ))}
                     </tbody>
@@ -165,14 +171,21 @@ export default function HardwarePage() {
             </div>
 
             {/* Add Modal */}
-            {showAddModal && (
-                <AddDeviceModal onClose={() => setShowAddModal(false)} onAdd={handleAddDevice} />
+            {showAddModal && tenantId && (
+                <AddDeviceModal
+                    tenantId={tenantId}
+                    onClose={() => setShowAddModal(false)}
+                    onSuccess={() => {
+                        queryClient.invalidateQueries({ queryKey: ['devices', tenantId] });
+                        setShowAddModal(false);
+                    }}
+                />
             )}
         </div>
     );
 }
 
-function DeviceRow({ device, onEdit, onDelete }: { device: HardwareDevice; onEdit: () => void; onDelete: () => void }) {
+function DeviceRow({ device, onEdit, onDelete }: { device: Device; onEdit: () => void; onDelete: () => void }) {
     return (
         <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50 group">
             <td className="table-cell">
@@ -192,7 +205,7 @@ function DeviceRow({ device, onEdit, onDelete }: { device: HardwareDevice; onEdi
                     device.status === 'RETIRED' && 'badge-error',
                 )}>{STATUS_LABELS[device.status]}</span>
             </td>
-            <td className="table-cell text-xs text-slate-500">{device.rack || '–'}</td>
+            <td className="table-cell text-xs text-slate-500">{device.rackName || '–'}</td>
             <td className="table-cell">
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={onEdit} className="p-1 text-slate-400 hover:text-primary-500" title="Bearbeiten">
@@ -207,12 +220,12 @@ function DeviceRow({ device, onEdit, onDelete }: { device: HardwareDevice; onEdi
     );
 }
 
-function EditableRow({ device, onSave, onCancel }: { device: HardwareDevice; onSave: (id: string, updated: Partial<HardwareDevice>) => void; onCancel: () => void }) {
+function EditableRow({ device, onSave, onCancel }: { device: Device; onSave: (id: string, updated: Partial<CreateDeviceRequest>) => void; onCancel: () => void }) {
     const [name, setName] = useState(device.name);
-    const [model, setModel] = useState(device.model);
-    const [serial, setSerial] = useState(device.serial);
-    const [ip, setIp] = useState(device.ip);
-    const [mac, setMac] = useState(device.mac);
+    const [model, setModel] = useState(device.model ?? '');
+    const [serial, setSerial] = useState(device.serial ?? '');
+    const [ip, setIp] = useState(device.ip ?? '');
+    const [mac, setMac] = useState(device.mac ?? '');
     const [status, setStatus] = useState(device.status);
 
     return (
@@ -225,16 +238,16 @@ function EditableRow({ device, onSave, onCancel }: { device: HardwareDevice; onS
             <td className="table-cell"><input value={ip} onChange={e => setIp(e.target.value)} className="input text-xs py-1 font-mono" /></td>
             <td className="table-cell"><input value={mac} onChange={e => setMac(e.target.value)} className="input text-xs py-1 font-mono" /></td>
             <td className="table-cell">
-                <select value={status} onChange={e => setStatus(e.target.value as HardwareDevice['status'])} className="input text-xs py-1">
+                <select value={status} onChange={e => setStatus(e.target.value as Device['status'])} className="input text-xs py-1">
                     {Object.entries(STATUS_LABELS).map(([key, label]) => (
                         <option key={key} value={key}>{label}</option>
                     ))}
                 </select>
             </td>
-            <td className="table-cell text-xs">{device.rack}</td>
+            <td className="table-cell text-xs">{device.rackName || '–'}</td>
             <td className="table-cell">
                 <div className="flex items-center gap-1">
-                    <button onClick={() => onSave(device.id, { name, model, serial, ip, mac, status })} className="p-1 text-green-600 hover:text-green-700" title="Speichern">
+                    <button onClick={() => onSave(device.id, { name, model, serial, ip, mac, status, deviceType: device.deviceType, heightU: device.heightU, rackId: device.rackId, siteId: device.siteId, rj45Ports: device.rj45Ports, sfpPorts: device.sfpPorts })} className="p-1 text-green-600 hover:text-green-700" title="Speichern">
                         <Check size={14} />
                     </button>
                     <button onClick={onCancel} className="p-1 text-slate-400 hover:text-slate-600" title="Abbrechen">
@@ -246,24 +259,55 @@ function EditableRow({ device, onSave, onCancel }: { device: HardwareDevice; onS
     );
 }
 
-function AddDeviceModal({ onClose, onAdd }: { onClose: () => void; onAdd: (device: Omit<HardwareDevice, 'id'>) => void }) {
+function AddDeviceModal({ tenantId, onClose, onSuccess }: { tenantId: string; onClose: () => void; onSuccess: () => void }) {
+    const { addToast } = useToast();
     const [name, setName] = useState('');
     const [deviceType, setDeviceType] = useState('SERVER');
     const [model, setModel] = useState('');
     const [serial, setSerial] = useState('');
     const [ip, setIp] = useState('');
     const [mac, setMac] = useState('');
-    const [status, setStatus] = useState<HardwareDevice['status']>('ACTIVE');
+    const [status, setStatus] = useState<Device['status']>('ACTIVE');
     const [heightU, setHeightU] = useState(1);
     const [rj45Ports, setRj45Ports] = useState(0);
     const [sfpPorts, setSfpPorts] = useState(0);
+    const [siteId, setSiteId] = useState('');
+
+    const { data: sites, isLoading: sitesLoading } = useQuery({
+        queryKey: ['sites', tenantId],
+        queryFn: () => SiteService.getByTenant(tenantId),
+        enabled: !!tenantId,
+    });
+
+    const createMutation = useMutation({
+        mutationFn: (data: CreateDeviceRequest) => DeviceService.create(data),
+        onSuccess: (created) => {
+            addToast({ type: 'success', title: 'Gerät hinzugefügt', message: `${created.name} wurde erstellt.` });
+            onSuccess();
+        },
+        onError: () => {
+            addToast({ type: 'error', title: 'Fehler', message: 'Gerät konnte nicht erstellt werden.' });
+        },
+    });
 
     const showPortFields = deviceType === 'SWITCH' || deviceType === 'FIREWALL';
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name.trim()) return;
-        onAdd({ name, deviceType, model, serial, ip, mac, status, rack: '', positionU: null, heightU, rj45Ports: showPortFields ? rj45Ports : 0, sfpPorts: showPortFields ? sfpPorts : 0 });
+        if (!name.trim() || !siteId) return;
+        createMutation.mutate({
+            name,
+            deviceType,
+            model: model || undefined,
+            serial: serial || undefined,
+            ip: ip || undefined,
+            mac: mac || undefined,
+            status,
+            heightU,
+            siteId,
+            rj45Ports: showPortFields ? rj45Ports : 0,
+            sfpPorts: showPortFields ? sfpPorts : 0,
+        });
     };
 
     return (
@@ -288,6 +332,25 @@ function AddDeviceModal({ onClose, onAdd }: { onClose: () => void; onAdd: (devic
                             </select>
                         </div>
                     </div>
+                    {/* Site selector */}
+                    <div>
+                        <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Standort *</label>
+                        {sitesLoading ? (
+                            <div className="flex items-center gap-2 text-xs text-slate-400 py-2">
+                                <Loader2 size={14} className="animate-spin" /> Standorte werden geladen...
+                            </div>
+                        ) : (
+                            <select value={siteId} onChange={e => setSiteId(e.target.value)} className="input" required>
+                                <option value="">Standort wählen...</option>
+                                {sites?.map(site => (
+                                    <option key={site.id} value={site.id}>{site.name}</option>
+                                ))}
+                            </select>
+                        )}
+                        {sites?.length === 0 && (
+                            <p className="text-xs text-amber-600 mt-1">Noch keine Standorte vorhanden. Bitte zuerst einen Standort anlegen.</p>
+                        )}
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Modell</label>
@@ -311,7 +374,7 @@ function AddDeviceModal({ onClose, onAdd }: { onClose: () => void; onAdd: (devic
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Status</label>
-                            <select value={status} onChange={e => setStatus(e.target.value as HardwareDevice['status'])} className="input">
+                            <select value={status} onChange={e => setStatus(e.target.value as Device['status'])} className="input">
                                 {Object.entries(STATUS_LABELS).map(([key, label]) => (
                                     <option key={key} value={key}>{label}</option>
                                 ))}
@@ -339,7 +402,13 @@ function AddDeviceModal({ onClose, onAdd }: { onClose: () => void; onAdd: (devic
                     )}
                     <div className="flex justify-end gap-3 pt-2">
                         <button type="button" onClick={onClose} className="btn-secondary text-xs">Abbrechen</button>
-                        <button type="submit" className="btn-primary text-xs">Gerät erstellen</button>
+                        <button type="submit" disabled={createMutation.isPending || !siteId} className="btn-primary text-xs">
+                            {createMutation.isPending ? (
+                                <><Loader2 size={14} className="animate-spin" /> Erstellen...</>
+                            ) : (
+                                'Gerät erstellen'
+                            )}
+                        </button>
                     </div>
                 </form>
             </div>

@@ -9,6 +9,7 @@ export interface Device {
     ip?: string;
     mac?: string;
     status: 'ACTIVE' | 'PLANNED' | 'STORAGE' | 'RETIRED';
+    siteId?: string;
     rackId?: string;
     rackName?: string;
     positionU?: number;

@@ -7,6 +7,7 @@ import com.msp.doku.dto.DeviceDto
 import com.msp.doku.dto.toDeviceDto
 import com.msp.doku.repository.DeviceRepository
 import com.msp.doku.repository.RackRepository
+import com.msp.doku.repository.SiteRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -14,7 +15,8 @@ import java.util.UUID
 @Service
 class DeviceService(
     private val deviceRepository: DeviceRepository,
-    private val rackRepository: RackRepository
+    private val rackRepository: RackRepository,
+    private val siteRepository: SiteRepository
 ) {
 
     fun getAllDevices(tenantId: UUID? = null): List<DeviceDto> {
@@ -42,6 +44,10 @@ class DeviceService(
             rackRepository.findById(it).orElseThrow { IllegalArgumentException("Rack not found") }
         }
 
+        val site = request.siteId?.let {
+            siteRepository.findById(it).orElseThrow { IllegalArgumentException("Site not found") }
+        }
+
         val device = Device(
             name = request.name,
             deviceType = request.deviceType,
@@ -53,6 +59,7 @@ class DeviceService(
             positionU = request.positionU,
             status = request.status,
             rack = rack,
+            site = site,
             rj45Ports = request.rj45Ports,
             sfpPorts = request.sfpPorts
         )
@@ -81,6 +88,11 @@ class DeviceService(
         } else {
             device.rack = null
             device.positionU = null
+        }
+
+        if (request.siteId != null) {
+            val site = siteRepository.findById(request.siteId).orElseThrow { IllegalArgumentException("Site not found") }
+            device.site = site
         }
 
         return deviceRepository.save(device).toDeviceDto()

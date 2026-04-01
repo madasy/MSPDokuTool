@@ -177,8 +177,46 @@ function CreateRackModal({ tenantId, onClose }: { tenantId: string; onClose: () 
 
 export default function RackListPage() {
     const { tenantId } = useParams<{ tenantId: string }>();
+    const queryClient = useQueryClient();
+    const { addToast } = useToast();
     const [selectedDevice, setSelectedDevice] = useState<RackDevice | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [placementU, setPlacementU] = useState<string>('');
+
+    // Track whether the selected device is unplaced (from left panel)
+    const [selectedIsUnplaced, setSelectedIsUnplaced] = useState(false);
+
+    const placeMutation = useMutation({
+        mutationFn: async ({ deviceId, rackId, positionU }: { deviceId: string; rackId: string; positionU: number }) => {
+            const device = await DeviceService.getById(deviceId);
+            return DeviceService.update(deviceId, {
+                name: device.name,
+                deviceType: device.deviceType,
+                model: device.model,
+                serial: device.serial,
+                ip: device.ip,
+                mac: device.mac,
+                status: device.status,
+                heightU: device.heightU,
+                siteId: device.siteId,
+                rj45Ports: device.rj45Ports,
+                sfpPorts: device.sfpPorts,
+                rackId,
+                positionU,
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['devices'] });
+            queryClient.invalidateQueries({ queryKey: ['racks', tenantId] });
+            setSelectedDevice(null);
+            setPlacementU('');
+            setSelectedIsUnplaced(false);
+            addToast({ type: 'success', title: 'Platziert', message: 'Gerät wurde im Rack platziert.' });
+        },
+        onError: () => {
+            addToast({ type: 'error', title: 'Fehler', message: 'Gerät konnte nicht platziert werden.' });
+        },
+    });
 
     const { data: racks, isLoading: racksLoading } = useQuery({
         queryKey: ['racks', tenantId],
@@ -245,16 +283,20 @@ export default function RackListPage() {
                         {unplacedDevices?.map(device => (
                             <button
                                 key={device.id}
-                                onClick={() => setSelectedDevice({
-                                    id: device.id,
-                                    name: device.name,
-                                    deviceType: device.deviceType as RackDevice['deviceType'],
-                                    status: device.status,
-                                    heightU: device.heightU,
-                                    serialNumber: device.serial,
-                                    ip: device.ip,
-                                    model: device.model,
-                                })}
+                                onClick={() => {
+                                    setSelectedDevice({
+                                        id: device.id,
+                                        name: device.name,
+                                        deviceType: device.deviceType as RackDevice['deviceType'],
+                                        status: device.status,
+                                        heightU: device.heightU,
+                                        serialNumber: device.serial,
+                                        ip: device.ip,
+                                        model: device.model,
+                                    });
+                                    setSelectedIsUnplaced(true);
+                                    setPlacementU('');
+                                }}
                                 className={cn(
                                     'w-full text-left px-3 py-2.5 rounded-xl border transition-colors text-xs',
                                     selectedDevice?.id === device.id
@@ -311,7 +353,10 @@ export default function RackListPage() {
                                 }}
                                 onDeviceClick={(device) => {
                                     const full = firstRack.devices.find(d => d.id === device.id);
-                                    if (full) setSelectedDevice(full);
+                                    if (full) {
+                                        setSelectedDevice(full);
+                                        setSelectedIsUnplaced(false);
+                                    }
                                 }}
                             />
                         )}
@@ -345,6 +390,47 @@ export default function RackListPage() {
                                     {selectedDevice.serialNumber && <DetailRow label="Seriennr." value={selectedDevice.serialNumber} copyable />}
                                     {selectedDevice.model && <DetailRow label="Modell" value={selectedDevice.model} />}
                                 </DetailSection>
+
+                                {/* Placement UI for unplaced devices */}
+                                {selectedIsUnplaced && firstRack && (
+                                    <DetailSection title="Im Rack platzieren">
+                                        <p className="text-[11px] text-slate-500 mb-2">
+                                            In "{firstRack.name}" platzieren:
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-xs text-slate-500 whitespace-nowrap">Position U:</label>
+                                            <input
+                                                type="number"
+                                                value={placementU}
+                                                onChange={e => setPlacementU(e.target.value)}
+                                                className="input text-xs py-1 w-16"
+                                                min={1}
+                                                max={firstRack.heightUnits}
+                                                placeholder="U"
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    const u = parseInt(placementU);
+                                                    if (u && selectedDevice) {
+                                                        placeMutation.mutate({
+                                                            deviceId: selectedDevice.id,
+                                                            rackId: firstRack.id,
+                                                            positionU: u,
+                                                        });
+                                                    }
+                                                }}
+                                                disabled={!placementU || placeMutation.isPending}
+                                                className="btn-primary text-[11px] px-2 py-1 disabled:opacity-50"
+                                            >
+                                                {placeMutation.isPending ? (
+                                                    <Loader2 size={12} className="animate-spin" />
+                                                ) : (
+                                                    'Platzieren'
+                                                )}
+                                            </button>
+                                        </div>
+                                    </DetailSection>
+                                )}
                             </div>
                         </>
                     )}
