@@ -15,6 +15,6 @@ users:
   anish:
     displayname: anish
     email: anish@madassery.me
-    password: $2a$12$FvSJUcYCAik8Te6dtbbaM.fhUhI4nqcP87qLnzhfbJmiNgednkmUG
+    password: $2a$12$JQF8bEhxNk1pZLpMLzuPFu6IxrtgKkeDuMjBPaVeTJCDB9714etXa
     groups:
     - tenant:igeeks

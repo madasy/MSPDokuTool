@@ -35,6 +35,7 @@ class UserManagementController(
     }
 
     @PutMapping("/{username}/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun resetPassword(@PathVariable username: String, @RequestBody body: Map<String, String>) {
         val newPassword = body["password"] ?: throw IllegalArgumentException("password is required")
         if (newPassword.length < 8) throw IllegalArgumentException("Password must be at least 8 characters")
