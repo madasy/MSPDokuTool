@@ -1,47 +1,134 @@
-# MSP Documentation Tool
+# MSP DokuTool
 
-Multi-Tenant Documentation System for Managed Service Providers.
+IT infrastructure documentation tool for Managed Service Providers. Built to fill the gap that SDP MSP doesn't cover: **network documentation (IPAM)** and **visual infrastructure views (rack diagrams)**.
+
+## Quick Start
+
+```bash
+docker compose up
+```
+
+Open **http://localhost:3000**
+
+That's it. PostgreSQL, backend, and frontend all start automatically.
+
+## What It Does
+
+- **Multi-tenant** -- switch between customers via the sidebar dropdown
+- **Network / IPAM** -- subnets, VLANs, IP addresses with utilization tracking
+- **Rack Diagrams** -- visual rack layouts with device positioning
+- **Hardware Inventory** -- servers, switches, firewalls, APs with search and filtering
+- **Datacenter / Public IPs** -- manage public IP ranges across all customers
+- **Dashboard** -- aggregate stats and recent activity across all tenants
 
 ## Tech Stack
-*   **Backend**: Kotlin, Spring Boot 3, PostgreSQL
-*   **Frontend**: React, TypeScript, Vite
-*   **Infrastructure**: Docker Compose
 
-## Getting Started
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19, TypeScript, Vite 7, Tailwind CSS 4, React Query 5 |
+| Backend | Kotlin, Spring Boot 3.3, Spring Data JPA |
+| Database | PostgreSQL 16 |
+| Migrations | Flyway |
+| Containerization | Docker, nginx |
 
-### Prerequisites
-*   Java 21
-*   Node.js 20+
-*   Docker & Docker Compose
+## Architecture
 
-### 1. Start Infrastructure (PostgreSQL)
-```bash
-docker-compose up -d
+```
+Browser :3000 --> nginx (frontend)
+                    |
+                    |--> /api/* --> Spring Boot :8080 --> PostgreSQL :5432
+                    |
+                    |--> /*    --> React SPA (static files)
 ```
 
-### 2. Backend Setup
-The backend is a standard Gradle project.
+Three Docker containers:
+- **mspdoku-frontend** -- nginx serving the React build + proxying `/api` to backend
+- **mspdoku-backend** -- Spring Boot REST API
+- **mspdoku-postgres** -- PostgreSQL 16
+
+## Development
+
+### Run with Docker (recommended)
+
 ```bash
+docker compose up --build
+```
+
+### Run locally (without Docker)
+
+**Prerequisites:** Java 21, Node.js 22, PostgreSQL 16
+
+```bash
+# 1. Start PostgreSQL (or use Docker for just the DB)
+docker compose up -d postgres
+
+# 2. Start backend
 cd backend
-# Generate Wrapper (if not present) 
-# gradle wrapper
-
-# Run Application
 ./gradlew bootRun
-```
-*   API: http://localhost:8080
-*   Swagger UI: http://localhost:8080/swagger-ui.html (once added)
 
-### 3. Frontend Setup
-The frontend is a Vite + React project.
-```bash
+# 3. Start frontend (in another terminal)
 cd frontend
 npm install
 npm run dev
 ```
-*   App: http://localhost:5173
+
+Frontend dev server runs at `http://localhost:5173` with API proxy to `localhost:8080`.
+
+### Reset database
+
+```bash
+docker compose down -v
+docker compose up
+```
+
+## API Endpoints
+
+### Global
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/dashboard/stats` | Aggregate counts (tenants, devices, subnets, IPs) |
+| GET | `/api/v1/dashboard/activity?limit=20` | Recent changes across all tenants |
+| GET | `/api/v1/tenants` | List all tenants |
+| POST | `/api/v1/tenants` | Create tenant |
+| GET | `/api/v1/datacenter/ip-ranges` | List public IP ranges |
+| POST | `/api/v1/datacenter/ip-ranges` | Create public IP range |
+
+### Tenant-scoped
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/tenants/{id}/summary` | Infrastructure summary for tenant |
+| GET | `/api/v1/devices?tenantId={id}` | Devices for tenant |
+| GET | `/api/v1/racks?tenantId={id}` | Racks with devices for tenant |
+| GET | `/api/v1/network/subnets?tenantId={id}` | Subnets for tenant |
+| GET | `/api/v1/network/subnets/{id}/ips` | IP addresses in subnet |
 
 ## Project Structure
-*   `backend/`: Spring Boot Application source code
-*   `frontend/`: React Application source code
-*   `docker-compose.yml`: Database configuration
+
+```
+MSPDokuTool/
+  backend/
+    src/main/kotlin/com/msp/doku/
+      controller/     # REST endpoints
+      service/        # Business logic
+      repository/     # JPA repositories
+      domain/         # Entities
+      dto/            # Data transfer objects
+      config/         # Security, CORS
+    src/main/resources/
+      db/migration/   # Flyway SQL migrations (V1-V6)
+  frontend/
+    src/
+      pages/          # Page components
+      components/     # Reusable UI components
+      services/       # API client wrappers
+      hooks/          # Custom React hooks
+  docker-compose.yml
+```
+
+## Complements (not replaces)
+
+- **ServiceDesk Plus MSP** -- contracts, licenses, asset tracking, ticketing
+- **Confluence** -- knowledge base, procedures, documentation
+- **Bitwarden** -- password and credential management
