@@ -25,6 +25,13 @@ export default function Layout() {
     const currentTenant = tenants?.find(t => t.id === tenantId);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+    // 3. Persist selected tenant to localStorage
+    useEffect(() => {
+        if (tenantId) {
+            localStorage.setItem('lastTenantId', tenantId);
+        }
+    }, [tenantId]);
+
     // Close mobile menu on route change
     useEffect(() => { setMobileMenuOpen(false); }, [location.pathname]);
 
@@ -58,8 +65,17 @@ export default function Layout() {
                     </div>
                 </div>
 
+                {/* Tenant Switcher */}
+                <div className="px-4 pt-4 pb-2">
+                    <TenantSwitcher
+                        tenants={tenants || []}
+                        currentTenant={currentTenant}
+                        onSelect={(t) => navigate(`/tenants/${t.id}`)}
+                    />
+                </div>
+
                 {/* Search / CMD+K */}
-                <div className="px-4 pt-6 pb-2">
+                <div className="px-4 pt-2 pb-2">
                     <button
                         className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-slate-400 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-all shadow-sm group"
                         onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
@@ -71,50 +87,33 @@ export default function Layout() {
                 </div>
 
                 {/* Navigation Menu */}
-                <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-8 sidebar-scroll">
+                <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-4 sidebar-scroll">
 
-                    {/* Mode: Tenant Context */}
-                    {isInTenantContext ? (
-                        <>
-                            <div>
-                                <SectionHeader label="Tenant Menu" />
-                                <div className="space-y-1 mt-2">
-                                    <NavItem to={`/tenants/${tenantId}`} icon={<LayoutDashboard size={18} />} label="Übersicht" end />
-                                </div>
-                            </div>
+                    {/* Global nav — always visible */}
+                    <div className="space-y-1">
+                        <NavItem to="/" icon={<LayoutDashboard size={18} />} label="Dashboard" end />
+                        <NavItem to="/tenants" icon={<Users size={18} />} label="Tenants" />
+                        <NavItem to="/datacenter" icon={<Globe size={18} />} label="Datacenter / IPs" />
+                    </div>
 
-                            <div>
-                                <SectionHeader label="Infrastruktur" />
-                                <div className="space-y-1 mt-2">
-                                    <NavItem to={`/tenants/${tenantId}/racks`} icon={<Server size={18} />} label="Racks" />
-                                    <NavItem to={`/tenants/${tenantId}/hardware`} icon={<Cpu size={18} />} label="Hardware" />
-                                </div>
+                    {/* Tenant-scoped nav — only when a tenant is selected */}
+                    {isInTenantContext && (
+                        <div>
+                            <div className="border-t border-white/10 mb-3" />
+                            <SectionHeader label="Kunde" />
+                            <div className="space-y-1 mt-2">
+                                <NavItem to={`/tenants/${tenantId}`} icon={<LayoutDashboard size={18} />} label="Übersicht" end />
+                                <NavItem to={`/tenants/${tenantId}/hardware`} icon={<Cpu size={18} />} label="Hardware" />
+                                <NavItem to={`/tenants/${tenantId}/racks`} icon={<Server size={18} />} label="Racks" />
+                                <NavItem to={`/tenants/${tenantId}/network`} icon={<Network size={18} />} label="IP-Plan" />
                             </div>
-
-                            <div>
-                                <SectionHeader label="Netzwerk" />
-                                <div className="space-y-1 mt-2">
-                                    <NavItem to={`/tenants/${tenantId}/network`} icon={<Network size={18} />} label="IP-Plan" />
-                                </div>
-                            </div>
-
-                            <div className="pt-6 mt-2 border-t border-white/10">
-                                <NavItem to="/tenants" icon={<Users size={18} />} label="Alle Tenants" />
-                            </div>
-                        </>
-                    ) : (
-                        /* Mode: Global Context */
-                        <>
-                            <div className="space-y-1">
-                                <NavItem to="/" icon={<LayoutDashboard size={18} />} label="Dashboard" end />
-                                <NavItem to="/tenants" icon={<Users size={18} />} label="Tenants" />
-                                <NavItem to="/datacenter" icon={<Globe size={18} />} label="Datacenter / IPs" />
-                            </div>
-
-                            <FavoritesSidebar />
-                        </>
+                        </div>
                     )}
 
+                    {/* Favorites */}
+                    <div className="border-t border-white/10 pt-3">
+                        <FavoritesSidebar />
+                    </div>
 
                 </nav>
 
@@ -130,7 +129,7 @@ export default function Layout() {
             {/* Main Content Wrapper */}
             <div className="flex-1 flex flex-col min-w-0 h-full bg-slate-50 relative">
 
-                {/* Header with Tenant Switcher (Top Right) */}
+                {/* Header — simplified: breadcrumbs + user profile only */}
                 <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-4 lg:px-8 shadow-sm flex-shrink-0 z-10 sticky top-0">
                     {/* Left: Hamburger + Breadcrumbs */}
                     <div className="flex items-center gap-3">
@@ -143,19 +142,8 @@ export default function Layout() {
                         <Breadcrumbs />
                     </div>
 
-                    {/* Right: Tenant Switcher & User */}
-                    <div className="flex items-center gap-5">
-
-                        {/* Tenant Switcher Dropdown */}
-                        <TenantSwitcher
-                            tenants={tenants || []}
-                            currentTenant={currentTenant}
-                            onSelect={(t) => navigate(`/tenants/${t.id}`)}
-                        />
-
-                        <div className="h-8 w-[1px] bg-slate-200/80"></div>
-
-                        {/* User Profile */}
+                    {/* Right: User Profile */}
+                    <div className="flex items-center">
                         <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-100/80 p-1.5 pr-4 rounded-full transition-colors border border-transparent hover:border-slate-200/50">
                             <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-primary-100 to-primary-50 text-primary-700 flex items-center justify-center text-xs font-bold border border-primary-100 shadow-sm">
                                 AM
@@ -209,15 +197,15 @@ function TenantSwitcher({
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={cn(
-                    "flex items-center gap-2.5 pl-3 pr-2 py-1.5 rounded-lg border transition-all text-xs font-medium min-w-[180px]",
+                    "w-full flex items-center gap-2.5 pl-3 pr-2 py-2 rounded-xl border transition-all text-xs font-medium",
                     currentTenant
-                        ? "bg-white border-slate-200 text-slate-700 hover:border-primary-300 shadow-sm"
-                        : "bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100"
+                        ? "bg-white/10 border-white/10 text-white hover:border-white/20 hover:bg-white/15"
+                        : "bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-300"
                 )}
             >
                 <div className={cn(
-                    "w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold",
-                    currentTenant ? "bg-primary-50 text-primary-600" : "bg-slate-200 text-slate-400"
+                    "w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold flex-shrink-0",
+                    currentTenant ? "bg-primary-500/30 text-primary-300" : "bg-white/10 text-slate-400"
                 )}>
                     {currentTenant ? currentTenant.name.substring(0, 2).toUpperCase() : <Building size={12} />}
                 </div>
@@ -226,15 +214,15 @@ function TenantSwitcher({
                     {currentTenant ? currentTenant.name : "Tenant auswählen..."}
                 </span>
 
-                <ChevronsUpDown size={14} className="opacity-50" />
+                <ChevronsUpDown size={14} className="opacity-50 flex-shrink-0" />
             </button>
 
             {isOpen && (
-                <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-100 py-1 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100">
-                    <div className="px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50 border-b border-slate-50">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 rounded-xl shadow-2xl border border-white/10 py-1 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100">
+                    <div className="px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-900/50 border-b border-white/5">
                         Tenants ({tenants.length})
                     </div>
-                    <div className="max-h-64 overflow-y-auto py-1">
+                    <div className="max-h-56 overflow-y-auto py-1">
                         {tenants.map(tenant => (
                             <button
                                 key={tenant.id}
@@ -243,33 +231,33 @@ function TenantSwitcher({
                                     setIsOpen(false);
                                 }}
                                 className={cn(
-                                    "w-full flex items-center gap-3 px-3 py-2 text-xs hover:bg-slate-50 transition-colors text-left group",
-                                    currentTenant?.id === tenant.id && "bg-primary-50/50"
+                                    "w-full flex items-center gap-3 px-3 py-2 text-xs hover:bg-white/5 transition-colors text-left group",
+                                    currentTenant?.id === tenant.id && "bg-primary-500/10"
                                 )}
                             >
                                 <div className={cn(
-                                    "w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold transition-colors",
+                                    "w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold transition-colors flex-shrink-0",
                                     currentTenant?.id === tenant.id
-                                        ? "bg-primary-100 text-primary-700 shadow-sm"
-                                        : "bg-slate-100 text-slate-500 group-hover:bg-white group-hover:shadow-sm"
+                                        ? "bg-primary-500/30 text-primary-300"
+                                        : "bg-white/10 text-slate-400 group-hover:bg-white/15"
                                 )}>
                                     {tenant.name.substring(0, 2).toUpperCase()}
                                 </div>
-                                <div className="flex-1">
-                                    <div className={cn("font-medium", currentTenant?.id === tenant.id ? "text-primary-900" : "text-slate-700")}>
+                                <div className="flex-1 min-w-0">
+                                    <div className={cn("font-medium truncate", currentTenant?.id === tenant.id ? "text-primary-300" : "text-slate-200")}>
                                         {tenant.name}
                                     </div>
-                                    <div className="text-[10px] text-slate-400 font-mono truncate">{tenant.identifier}</div>
+                                    <div className="text-[10px] text-slate-500 font-mono truncate">{tenant.identifier}</div>
                                 </div>
-                                {currentTenant?.id === tenant.id && <Check size={14} className="text-primary-500" />}
+                                {currentTenant?.id === tenant.id && <Check size={14} className="text-primary-400 flex-shrink-0" />}
                             </button>
                         ))}
                     </div>
-                    <div className="p-2 border-t border-slate-50 bg-slate-50/30">
+                    <div className="p-2 border-t border-white/5 bg-slate-900/30">
                         <NavLink
                             to="/tenants"
                             onClick={() => setIsOpen(false)}
-                            className="flex items-center justify-center gap-2 w-full py-1.5 text-xs text-slate-500 hover:text-primary-600 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-all font-medium"
+                            className="flex items-center justify-center gap-2 w-full py-1.5 text-xs text-slate-400 hover:text-primary-400 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/10 transition-all font-medium"
                         >
                             <Users size={12} />
                             Alle verwalten
