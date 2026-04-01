@@ -42,29 +42,15 @@ notifier:
     filename: /config/notification.txt
 
 # Access control:
-# - Admins and technicians: password only (one_factor)
-# - Tenant customer users: password + TOTP (two_factor)
-#
-# How it works: default_policy is one_factor so everyone can log in
-# with just a password. Then subject-based rules UPGRADE tenant users
-# to require two_factor on their next request after first-factor auth.
+# default_policy: one_factor — so Authelia's login portal only shows
+# the password form (not 2FA) for the initial URL check.
+# After first-factor auth, subject-based rules kick in:
+# - tenant_users group → two_factor (Authelia then prompts for TOTP)
+# - admins/technicians → one_factor (already satisfied, redirects to app)
 access_control:
   default_policy: one_factor
   rules:
-    # Admins — explicitly one_factor (matches first, stops evaluation)
-    - domain: '127.0.0.1'
-      subject:
-        - ['group:admins']
-      policy: one_factor
-
-    # Technicians — explicitly one_factor
-    - domain: '127.0.0.1'
-      subject:
-        - ['group:technicians']
-      policy: one_factor
-
-    # Tenant customer users — must complete 2FA after password login
-    # All tenant users get the 'tenant_users' group when created
+    # Tenant customer users must complete 2FA
     - domain: '127.0.0.1'
       subject:
         - ['group:tenant_users']

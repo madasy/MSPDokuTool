@@ -127,9 +127,14 @@ export default function Layout() {
                 <div className="p-4 border-t border-white/10">
                     <button
                         onClick={() => {
-                            fetch('/api/logout', { method: 'POST', credentials: 'same-origin' })
-                                .then(() => { window.location.href = '/.authelia/#/logout'; })
-                                .catch(() => { window.location.href = '/.authelia/#/logout'; });
+                            fetch('/api/logout', {
+                                method: 'POST',
+                                credentials: 'same-origin',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ targetURL: `https://${window.location.host}/.authelia/` })
+                            })
+                                .then(() => { window.location.href = '/.authelia/'; })
+                                .catch(() => { window.location.href = '/.authelia/'; });
                         }}
                         className="flex items-center gap-3 w-full px-3 py-2.5 text-xs text-white/50 hover:text-white transition-colors rounded-xl hover:bg-white/5 font-medium cursor-pointer"
                     >
