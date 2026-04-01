@@ -20,7 +20,7 @@ class AutheliaUserService(
 
     // Authelia expects $2b$ prefix, Spring BCrypt generates $2a$ — functionally identical but we convert
     private fun encodePassword(password: String): String {
-        val hash = encodePassword(password)
+        val hash = passwordEncoder.encode(password)
         return if (hash.startsWith("\$2a\$")) {
             "\$2b\$" + hash.substring(4)
         } else {

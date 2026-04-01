@@ -12,10 +12,3 @@ users:
     password: $2b$12$qnH8d7XbqIV4U7Uew1jHLOC2sW/ejWBci1iZ3eGSA3ZtaATfRO/ee
     groups:
     - technicians
-  anish:
-    displayname: anish
-    email: anish@madassery.me
-    password: $2b$12$hRDooLgM8jc5G4tLLR9oA.xYZZr9O6EaOabpDfmGWcWtsZk/wPTFa
-    groups:
-    - tenant:igeeks
-    - tenant_users
