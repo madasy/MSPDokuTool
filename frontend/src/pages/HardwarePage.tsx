@@ -5,7 +5,7 @@ import { Cpu, Monitor, Shield, Wifi, Box, Plus, Search, Edit2, Trash2, X, Check,
 import { cn } from '../lib/utils';
 import { useToast } from '../components/ui/Toast';
 import { DeviceService, type Device, type CreateDeviceRequest } from '../services/DeviceService';
-import { SiteService, type Site } from '../services/SiteService';
+import { SiteService } from '../services/SiteService';
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
     SERVER: <Cpu size={14} />,

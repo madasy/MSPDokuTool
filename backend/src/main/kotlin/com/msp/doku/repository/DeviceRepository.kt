@@ -10,12 +10,12 @@ import java.util.UUID
 interface DeviceRepository : JpaRepository<Device, UUID> {
     fun findByRackId(rackId: UUID): List<Device>
 
-    @Query("SELECT d FROM Device d WHERE d.rack.room.site.tenant.id = :tenantId OR d.site.tenant.id = :tenantId")
+    @Query("SELECT d FROM Device d LEFT JOIN d.rack r LEFT JOIN r.room rm LEFT JOIN rm.site rs LEFT JOIN d.site ds WHERE rs.tenant.id = :tenantId OR ds.tenant.id = :tenantId")
     fun findByTenantId(tenantId: UUID): List<Device>
 
-    @Query("SELECT COUNT(d) FROM Device d WHERE d.rack.room.site.tenant.id = :tenantId OR d.site.tenant.id = :tenantId")
+    @Query("SELECT COUNT(d) FROM Device d LEFT JOIN d.rack r LEFT JOIN r.room rm LEFT JOIN rm.site rs LEFT JOIN d.site ds WHERE rs.tenant.id = :tenantId OR ds.tenant.id = :tenantId")
     fun countByTenantId(tenantId: UUID): Long
 
-    @Query("SELECT d FROM Device d WHERE (d.rack.room.site.tenant.id = :tenantId OR d.site.tenant.id = :tenantId) AND d.rack IS NULL")
+    @Query("SELECT d FROM Device d LEFT JOIN d.rack r LEFT JOIN r.room rm LEFT JOIN rm.site rs LEFT JOIN d.site ds WHERE (rs.tenant.id = :tenantId OR ds.tenant.id = :tenantId) AND d.rack IS NULL")
     fun findUnplacedByTenantId(tenantId: UUID): List<Device>
 }

@@ -1,7 +1,6 @@
 package com.msp.doku.domain
 
 import jakarta.persistence.*
-import java.time.Instant
 
 @Entity
 @Table(name = "firewall_interfaces")
@@ -35,12 +34,6 @@ class FirewallInterface(
     var description: String? = null,
 
     @Column(nullable = false, length = 20)
-    var status: String = "enabled",
-
-    @Column(name = "created_at", nullable = false)
-    var createdAt: Instant = Instant.now(),
-
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: Instant = Instant.now()
+    var status: String = "enabled"
 
 ) : BaseEntity()
