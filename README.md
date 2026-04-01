@@ -1,6 +1,55 @@
 # MSP DokuTool
 
-IT infrastructure documentation tool for Managed Service Providers. Built to fill the gap that SDP MSP doesn't cover: **network documentation (IPAM)** and **visual infrastructure views (rack diagrams)**.
+> **Status: Under active development** -- This is a side project and has not been tested in production environments. It's the beginning of what will hopefully become a really good documentation tool for MSPs. Feel free to try it out and [send feedback](https://github.com/madasy/MSPDokuTool/issues)!
+
+An open-source IT infrastructure documentation tool built specifically for Managed Service Providers (MSPs). Think of it as an open alternative to tools like Hudu or IT Glue -- focused on network documentation, rack visualization, and structured IT documentation per customer.
+
+## Features
+
+### Multi-Tenant Customer Management
+- Global tenant switcher in the sidebar
+- Per-customer infrastructure views
+- Customer-specific user accounts with 2FA
+
+### Network & IPAM
+- Subnet management with VLAN assignment
+- IP address tracking with utilization metrics
+- Status tracking (active, reserved, DHCP, free)
+- Public IP range management in the datacenter view
+- Individual IP assignment to customers and devices
+
+### Infrastructure
+- **Sites & Rooms** -- manage physical locations per customer
+- **Rack Diagrams** -- visual 42U rack layouts with device positioning
+- **Hardware Inventory** -- servers, switches, firewalls, APs, patch panels
+- **Switch Port Management** -- visual faceplate, VLAN assignment, port status
+- **Access Points** -- track APs with location, model, SSIDs, channel
+
+### Structured Documentation (11 Templates)
+Pre-built documentation sections per customer with structured fields + free-text notes:
+
+1. **Access & Credentials** -- admin concepts, MFA requirements, break-glass accounts, privileged access paths
+2. **Network Architecture** -- VLAN structure, routing design, WAN setup, site-to-site VPN
+3. **Critical Services & Dependencies** -- business-critical systems, dependency chains
+4. **Backup & Recovery** -- what's backed up, retention policies, RTO/RPO, recovery procedures
+5. **Monitoring & Alerting** -- monitored systems, thresholds, alert destinations, escalation
+6. **SOPs** -- tenant onboarding, server deployment, VM restore, incident handling
+7. **Change & Update Strategy** -- patch management, maintenance windows, change approval
+8. **Security Baseline** -- hardening standards, AV/EDR, logging, RBAC
+9. **Disaster Recovery** -- datacenter down, ransomware, full tenant loss, recovery order
+10. **External Integrations** -- ISPs, cloud providers, SaaS tools, licensing
+11. **Naming Conventions** -- server, network, VLAN naming standards
+
+### Authentication & User Management
+- **Authelia** integration for authentication (forward-auth via nginx)
+- Internal technicians: password-only login
+- Customer users: password + TOTP 2FA
+- Admin can create/delete tenant users, reset passwords and 2FA
+- LDAP-ready for production environments
+
+### Dashboard
+- Aggregate stats across all tenants (devices, subnets, IPs)
+- Recent activity feed
 
 ## Quick Start
 
@@ -17,41 +66,16 @@ docker compose up
 
 Open **https://localhost:3443** (accept the self-signed cert warning)
 
-That's it. PostgreSQL, backend, frontend, and Authelia all start automatically.
+PostgreSQL, Spring Boot backend, React frontend, and Authelia all start automatically.
 
-### Test Login
+### Test Accounts
 
-| Username | Password | Role |
-|----------|----------|------|
-| `admin` | `admin123` | Admin + Technician |
-| `technician` | `admin123` | Technician |
+| Username | Password | Role | 2FA |
+|----------|----------|------|-----|
+| `admin` | `admin123` | Admin + Technician | No |
+| `technician` | `admin123` | Technician | No |
 
-Authelia handles authentication at **https://localhost:9443**. On first access you'll be redirected to the Authelia login page.
-
-### Using Trusted Certificates
-
-Replace the self-signed certs in `certs/` with your own:
-
-```bash
-cp /path/to/your/cert.crt certs/server.crt
-cp /path/to/your/cert.key certs/server.key
-docker compose restart frontend authelia
-```
-
-### Trust Self-Signed Cert (macOS)
-
-```bash
-sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain certs/server.crt
-```
-
-## What It Does
-
-- **Multi-tenant** -- switch between customers via the sidebar dropdown
-- **Network / IPAM** -- subnets, VLANs, IP addresses with utilization tracking
-- **Rack Diagrams** -- visual rack layouts with device positioning
-- **Hardware Inventory** -- servers, switches, firewalls, APs with search and filtering
-- **Datacenter / Public IPs** -- manage public IP ranges across all customers
-- **Dashboard** -- aggregate stats and recent activity across all tenants
+Customer users can be created from the Benutzer (Users) page within each tenant. They are required to set up TOTP 2FA on first login.
 
 ## Tech Stack
 
@@ -60,23 +84,25 @@ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keyc
 | Frontend | React 19, TypeScript, Vite 7, Tailwind CSS 4, React Query 5 |
 | Backend | Kotlin, Spring Boot 3.3, Spring Data JPA |
 | Database | PostgreSQL 16 |
+| Auth | Authelia (forward-auth proxy) |
 | Migrations | Flyway |
 | Containerization | Docker, nginx |
 
 ## Architecture
 
 ```
-Browser :3000 --> nginx (frontend)
+Browser :3443 --> nginx (HTTPS + forward-auth)
                     |
-                    |--> /api/* --> Spring Boot :8080 --> PostgreSQL :5432
-                    |
-                    |--> /*    --> React SPA (static files)
+                    |--> /authelia/* --> Authelia :9091 (login, 2FA, session)
+                    |--> /api/v1/*  --> Spring Boot :8080 --> PostgreSQL :5432
+                    |--> /*         --> React SPA (static files)
 ```
 
-Three Docker containers:
-- **mspdoku-frontend** -- nginx serving the React build + proxying `/api` to backend
+Four Docker containers:
+- **mspdoku-frontend** -- nginx with HTTPS, Authelia forward-auth, serves React build, proxies API
 - **mspdoku-backend** -- Spring Boot REST API
 - **mspdoku-postgres** -- PostgreSQL 16
+- **mspdoku-authelia** -- Authentication portal (login, 2FA, session management)
 
 ## Development
 
@@ -113,6 +139,12 @@ docker compose down -v
 docker compose up
 ```
 
+### Trust Self-Signed Cert (macOS)
+
+```bash
+sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain certs/server.crt
+```
+
 ## API Endpoints
 
 ### Global
@@ -126,41 +158,65 @@ docker compose up
 | GET | `/api/v1/datacenter/ip-ranges` | List public IP ranges |
 | POST | `/api/v1/datacenter/ip-ranges` | Create public IP range |
 
-### Tenant-scoped
+### Tenant-Scoped
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/v1/tenants/{id}/summary` | Infrastructure summary for tenant |
+| GET | `/api/v1/tenants/{id}/summary` | Infrastructure summary |
 | GET | `/api/v1/devices?tenantId={id}` | Devices for tenant |
-| GET | `/api/v1/racks?tenantId={id}` | Racks with devices for tenant |
-| GET | `/api/v1/network/subnets?tenantId={id}` | Subnets for tenant |
+| GET | `/api/v1/racks?tenantId={id}` | Racks with devices |
+| GET | `/api/v1/network/subnets?tenantId={id}` | Subnets |
 | GET | `/api/v1/network/subnets/{id}/ips` | IP addresses in subnet |
+| GET | `/api/v1/sites?tenantId={id}` | Sites for tenant |
+| GET | `/api/v1/rooms?siteId={id}` | Rooms in site |
+| GET | `/api/v1/devices/{id}/ports` | Switch ports |
+| GET | `/api/v1/access-points?tenantId={id}` | Access points |
+| GET | `/api/v1/tenants/{id}/docs` | Documentation sections overview |
+| GET | `/api/v1/tenants/{id}/docs/{type}` | Documentation section detail |
+| PUT | `/api/v1/tenants/{id}/docs/{type}` | Update documentation section |
+
+### User Management
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/users` | List all users |
+| POST | `/api/v1/users` | Create user |
+| DELETE | `/api/v1/users/{username}` | Delete user |
+| PUT | `/api/v1/users/{username}/password` | Reset password |
+| POST | `/api/v1/users/{username}/reset-totp` | Reset 2FA |
 
 ## Project Structure
 
 ```
 MSPDokuTool/
+  authelia/               # Authelia config (users, access control)
+  certs/                  # SSL certificates (gitignored)
   backend/
     src/main/kotlin/com/msp/doku/
-      controller/     # REST endpoints
-      service/        # Business logic
-      repository/     # JPA repositories
-      domain/         # Entities
-      dto/            # Data transfer objects
-      config/         # Security, CORS
+      controller/         # REST endpoints
+      service/            # Business logic
+      repository/         # JPA repositories
+      domain/             # Entities (Tenant, Device, Rack, Subnet, ...)
+      dto/                # Data transfer objects
+      config/             # Security, CORS
     src/main/resources/
-      db/migration/   # Flyway SQL migrations (V1-V6)
+      db/migration/       # Flyway SQL migrations (V1-V10)
   frontend/
     src/
-      pages/          # Page components
-      components/     # Reusable UI components
-      services/       # API client wrappers
-      hooks/          # Custom React hooks
-  docker-compose.yml
+      pages/              # Page components (Dashboard, Hardware, Racks, ...)
+      components/         # Reusable UI components (Layout, Toast, ...)
+      services/           # API client wrappers
+      hooks/              # Custom React hooks
+  docker-compose.yml      # Full stack: postgres + backend + frontend + authelia
 ```
 
-## Complements (not replaces)
+## Contributing
 
-- **ServiceDesk Plus MSP** -- contracts, licenses, asset tracking, ticketing
-- **Confluence** -- knowledge base, procedures, documentation
-- **Bitwarden** -- password and credential management
+This project is in its early stages. If you're an MSP looking for a documentation tool, give it a try and let me know what works and what doesn't.
+
+- Report bugs and feature requests via [GitHub Issues](https://github.com/madasy/MSPDokuTool/issues)
+- Pull requests are welcome
+
+## License
+
+This project is licensed under the [GNU General Public License v3.0](LICENSE) -- see the LICENSE file for details.
