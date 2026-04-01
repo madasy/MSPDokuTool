@@ -124,7 +124,14 @@ export default function Layout() {
 
                 {/* Footer */}
                 <div className="p-4 border-t border-white/10">
-                    <button className="flex items-center gap-3 w-full px-3 py-2.5 text-xs text-white/50 hover:text-white transition-colors rounded-xl hover:bg-white/5 font-medium">
+                    <button
+                        onClick={() => {
+                            fetch('/api/logout', { method: 'POST', credentials: 'same-origin' })
+                                .then(() => { window.location.href = '/.authelia/#/logout'; })
+                                .catch(() => { window.location.href = '/.authelia/#/logout'; });
+                        }}
+                        className="flex items-center gap-3 w-full px-3 py-2.5 text-xs text-white/50 hover:text-white transition-colors rounded-xl hover:bg-white/5 font-medium cursor-pointer"
+                    >
                         <LogOut size={16} />
                         <span>Abmelden</span>
                     </button>
