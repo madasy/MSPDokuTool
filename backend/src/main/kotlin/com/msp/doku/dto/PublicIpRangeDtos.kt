@@ -30,3 +30,21 @@ data class UpdatePublicIpRangeRequest(
     val provider: String? = null,
     val status: String? = null
 )
+
+data class PublicIpAssignmentDto(
+    val id: UUID,
+    val ipAddress: String,
+    val assignedTenantId: UUID?,
+    val assignedTenantName: String?,
+    val assignedDeviceId: UUID?,
+    val assignedDeviceName: String?,
+    val description: String?,
+    val status: String
+)
+
+data class UpdateIpAssignmentRequest(
+    val assignedTenantId: UUID? = null,
+    val assignedDeviceId: UUID? = null,
+    val description: String? = null,
+    val status: String? = null
+)

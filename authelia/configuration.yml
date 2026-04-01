@@ -1,0 +1,64 @@
+---
+# Authelia Configuration for MSP DokuTool
+# For production: replace secrets and use trusted certificates
+
+server:
+  address: 'tcp://:9091'
+
+log:
+  level: info
+
+totp:
+  issuer: 'MSP DokuTool'
+  disable_reuse_security_policy: false
+  allowed_algorithms:
+    - SHA1
+  allowed_digits:
+    - 6
+  allowed_periods:
+    - 30
+
+identity_validation:
+  reset_password:
+    jwt_secret: 'mspdoku_jwt_secret_change_in_production_1234567890'
+
+authentication_backend:
+  file:
+    path: /config/users.yml
+    password:
+      algorithm: bcrypt
+
+session:
+  secret: 'mspdoku_session_secret_change_in_production_1234'
+  cookies:
+    - domain: '127.0.0.1'
+      authelia_url: 'https://127.0.0.1:3443/.authelia'
+      default_redirection_url: 'https://127.0.0.1:3443'
+      name: 'authelia_session'
+      same_site: 'lax'
+      inactivity: '5m'
+      expiration: '1h'
+
+storage:
+  encryption_key: 'mspdoku_storage_encryption_key_change_in_prod_1234'
+  local:
+    path: /config/db.sqlite3
+
+notifier:
+  filesystem:
+    filename: /config/notification.txt
+
+# Access control:
+# default_policy: one_factor — so Authelia's login portal only shows
+# the password form (not 2FA) for the initial URL check.
+# After first-factor auth, subject-based rules kick in:
+# - tenant_users group → two_factor (Authelia then prompts for TOTP)
+# - admins/technicians → one_factor (already satisfied, redirects to app)
+access_control:
+  default_policy: one_factor
+  rules:
+    # Tenant customer users must complete 2FA
+    - domain: '127.0.0.1'
+      subject:
+        - ['group:tenant_users']
+      policy: two_factor

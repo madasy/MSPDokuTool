@@ -25,4 +25,9 @@ export type Device = RackDevice;
 export const RackService = {
     getByTenant: (tenantId: string) => apiFetch<Rack[]>(`/racks?tenantId=${tenantId}`),
     get: (id: string) => apiFetch<Rack>(`/racks/${id}`),
+    createInRoom: (roomId: string, data: { name: string; heightUnits?: number }) =>
+        apiFetch<Rack>(`/racks/${roomId}`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
 };

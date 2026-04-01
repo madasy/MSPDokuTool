@@ -13,4 +13,6 @@ interface RackRepository : JpaRepository<Rack, UUID> {
 
     @Query("SELECT COUNT(r) FROM Rack r WHERE r.room.site.tenant.id = :tenantId")
     fun countByTenantId(tenantId: UUID): Long
+
+    fun countByRoomId(roomId: UUID): Long
 }

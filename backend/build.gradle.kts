@@ -32,7 +32,11 @@ dependencies {
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
     
+    implementation("org.yaml:snakeyaml:2.2")
+    implementation("org.springframework.security:spring-security-crypto")
+
     runtimeOnly("org.postgresql:postgresql")
+    runtimeOnly("org.xerial:sqlite-jdbc:3.45.1.0")
     
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")

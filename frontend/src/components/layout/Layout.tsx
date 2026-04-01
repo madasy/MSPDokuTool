@@ -1,4 +1,4 @@
-import { LayoutDashboard, Network, Server, Users, LogOut, ChevronRight, Star, Globe, Search, ChevronsUpDown, Check, Building, Menu, X, StarOff, Cpu } from 'lucide-react';
+import { LayoutDashboard, Network, Server, Users, LogOut, ChevronRight, Star, Globe, Search, ChevronsUpDown, Check, Building, Menu, X, StarOff, Cpu, Building2, Monitor, FileText, Wifi, Shield, UserPlus } from 'lucide-react';
 import { NavLink, Outlet, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TenantService } from '../../services/TenantService';
@@ -103,9 +103,15 @@ export default function Layout() {
                             <SectionHeader label="Kunde" />
                             <div className="space-y-1 mt-2">
                                 <NavItem to={`/tenants/${tenantId}`} icon={<LayoutDashboard size={18} />} label="Übersicht" end />
+                                <NavItem to={`/tenants/${tenantId}/sites`} icon={<Building2 size={18} />} label="Standorte" />
                                 <NavItem to={`/tenants/${tenantId}/hardware`} icon={<Cpu size={18} />} label="Hardware" />
                                 <NavItem to={`/tenants/${tenantId}/racks`} icon={<Server size={18} />} label="Racks" />
                                 <NavItem to={`/tenants/${tenantId}/network`} icon={<Network size={18} />} label="IP-Plan" />
+                                <NavItem to={`/tenants/${tenantId}/switches`} icon={<Monitor size={18} />} label="Switches" />
+                                <NavItem to={`/tenants/${tenantId}/firewall`} icon={<Shield size={18} />} label="Firewall" />
+                                <NavItem to={`/tenants/${tenantId}/access-points`} icon={<Wifi size={18} />} label="Access Points" />
+                                <NavItem to={`/tenants/${tenantId}/docs`} icon={<FileText size={18} />} label="Dokumentation" />
+                                <NavItem to={`/tenants/${tenantId}/users`} icon={<UserPlus size={18} />} label="Benutzer" />
                             </div>
                         </div>
                     )}
@@ -119,7 +125,19 @@ export default function Layout() {
 
                 {/* Footer */}
                 <div className="p-4 border-t border-white/10">
-                    <button className="flex items-center gap-3 w-full px-3 py-2.5 text-xs text-white/50 hover:text-white transition-colors rounded-xl hover:bg-white/5 font-medium">
+                    <button
+                        onClick={() => {
+                            fetch('/api/logout', {
+                                method: 'POST',
+                                credentials: 'same-origin',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ targetURL: `https://${window.location.host}/.authelia/` })
+                            })
+                                .then(() => { window.location.href = '/.authelia/'; })
+                                .catch(() => { window.location.href = '/.authelia/'; });
+                        }}
+                        className="flex items-center gap-3 w-full px-3 py-2.5 text-xs text-white/50 hover:text-white transition-colors rounded-xl hover:bg-white/5 font-medium cursor-pointer"
+                    >
                         <LogOut size={16} />
                         <span>Abmelden</span>
                     </button>
@@ -144,15 +162,7 @@ export default function Layout() {
 
                     {/* Right: User Profile */}
                     <div className="flex items-center">
-                        <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-100/80 p-1.5 pr-4 rounded-full transition-colors border border-transparent hover:border-slate-200/50">
-                            <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-primary-100 to-primary-50 text-primary-700 flex items-center justify-center text-xs font-bold border border-primary-100 shadow-sm">
-                                AM
-                            </div>
-                            <div className="hidden md:block text-xs text-left">
-                                <p className="font-semibold text-slate-700">Anish M.</p>
-                                <p className="text-slate-400 font-medium text-[10px]">Admin</p>
-                            </div>
-                        </div>
+                        <UserProfile />
                     </div>
                 </header>
 
@@ -382,5 +392,31 @@ function NavItem({ to, icon, label, end }: { to: string; icon: React.ReactNode; 
                 </>
             )}
         </NavLink>
+    );
+}
+
+function UserProfile() {
+    const { data: user } = useQuery({
+        queryKey: ['auth', 'me'],
+        queryFn: () => fetch('/api/v1/auth/me').then(r => r.ok ? r.json() : null),
+        staleTime: 60000,
+        retry: false,
+    });
+
+    const displayName = user?.displayName || user?.username || 'User';
+    const initials = displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+    const groups = (user?.groups as string[]) || [];
+    const role = groups.includes('admins') ? 'Admin' : groups.includes('technicians') ? 'Techniker' : 'User';
+
+    return (
+        <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-800 p-1.5 pr-4 rounded-full transition-colors border border-transparent hover:border-slate-200/50 dark:hover:border-slate-700">
+            <div className="h-9 w-9 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 flex items-center justify-center text-xs font-bold border border-primary-200 dark:border-primary-800">
+                {initials}
+            </div>
+            <div className="hidden md:block text-xs text-left">
+                <p className="font-semibold text-slate-700 dark:text-slate-200">{displayName}</p>
+                <p className="text-slate-400 font-medium text-[10px]">{role}</p>
+            </div>
+        </div>
     );
 }

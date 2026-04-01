@@ -9,10 +9,13 @@ export interface Device {
     ip?: string;
     mac?: string;
     status: 'ACTIVE' | 'PLANNED' | 'STORAGE' | 'RETIRED';
+    siteId?: string;
     rackId?: string;
     rackName?: string;
     positionU?: number;
     heightU: number;
+    rj45Ports?: number;
+    sfpPorts?: number;
 }
 
 export type CreateDeviceRequest = Omit<Device, 'id' | 'rackName'>;

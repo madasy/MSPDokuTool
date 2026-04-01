@@ -5,12 +5,44 @@ IT infrastructure documentation tool for Managed Service Providers. Built to fil
 ## Quick Start
 
 ```bash
+# 1. Generate SSL certs (first time only)
+mkdir -p certs
+openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+  -keyout certs/server.key -out certs/server.crt \
+  -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+
+# 2. Start everything
 docker compose up
 ```
 
-Open **http://localhost:3000**
+Open **https://localhost:3443** (accept the self-signed cert warning)
 
-That's it. PostgreSQL, backend, and frontend all start automatically.
+That's it. PostgreSQL, backend, frontend, and Authelia all start automatically.
+
+### Test Login
+
+| Username | Password | Role |
+|----------|----------|------|
+| `admin` | `admin123` | Admin + Technician |
+| `technician` | `admin123` | Technician |
+
+Authelia handles authentication at **https://localhost:9443**. On first access you'll be redirected to the Authelia login page.
+
+### Using Trusted Certificates
+
+Replace the self-signed certs in `certs/` with your own:
+
+```bash
+cp /path/to/your/cert.crt certs/server.crt
+cp /path/to/your/cert.key certs/server.key
+docker compose restart frontend authelia
+```
+
+### Trust Self-Signed Cert (macOS)
+
+```bash
+sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain certs/server.crt
+```
 
 ## What It Does
 

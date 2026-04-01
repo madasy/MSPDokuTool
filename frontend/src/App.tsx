@@ -12,6 +12,12 @@ import RackListPage from './pages/RackListPage';
 import HardwarePage from './pages/HardwarePage';
 import NetworkPage from './pages/NetworkPage';
 import DatacenterPage from './pages/DatacenterPage';
+import SitesPage from './pages/SitesPage';
+import SwitchesPage from './pages/SwitchesPage';
+import AccessPointsPage from './pages/AccessPointsPage';
+import DocumentationPage from './pages/DocumentationPage';
+import FirewallPage from './pages/FirewallPage';
+import UserManagementPage from './pages/UserManagementPage';
 
 const queryClient = new QueryClient();
 
@@ -32,9 +38,15 @@ function App() {
 
                     {/* Tenant-scoped routes */}
                     <Route path="tenants/:tenantId" element={<ErrorBoundary><TenantDashboardPage /></ErrorBoundary>} />
+                    <Route path="tenants/:tenantId/sites" element={<ErrorBoundary><SitesPage /></ErrorBoundary>} />
                     <Route path="tenants/:tenantId/racks" element={<ErrorBoundary><RackListPage /></ErrorBoundary>} />
                     <Route path="tenants/:tenantId/hardware" element={<ErrorBoundary><HardwarePage /></ErrorBoundary>} />
                     <Route path="tenants/:tenantId/network" element={<ErrorBoundary><NetworkPage /></ErrorBoundary>} />
+                    <Route path="tenants/:tenantId/switches" element={<ErrorBoundary><SwitchesPage /></ErrorBoundary>} />
+                    <Route path="tenants/:tenantId/firewall" element={<ErrorBoundary><FirewallPage /></ErrorBoundary>} />
+                    <Route path="tenants/:tenantId/access-points" element={<ErrorBoundary><AccessPointsPage /></ErrorBoundary>} />
+                    <Route path="tenants/:tenantId/docs" element={<ErrorBoundary><DocumentationPage /></ErrorBoundary>} />
+                    <Route path="tenants/:tenantId/users" element={<ErrorBoundary><UserManagementPage /></ErrorBoundary>} />
                   </Route>
                 </Routes>
               </BrowserRouter>

@@ -6,4 +6,7 @@ import org.springframework.stereotype.Repository
 import java.util.UUID
 
 @Repository
-interface RoomRepository : JpaRepository<Room, UUID>
+interface RoomRepository : JpaRepository<Room, UUID> {
+    fun findBySiteId(siteId: UUID): List<Room>
+    fun countBySiteId(siteId: UUID): Long
+}

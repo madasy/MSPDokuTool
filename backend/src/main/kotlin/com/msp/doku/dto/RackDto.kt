@@ -31,7 +31,10 @@ data class DeviceDto(
     val heightU: Int,
     val status: DeviceStatus,
     val rackId: UUID?,
-    val rackName: String?
+    val rackName: String?,
+    val siteId: UUID?,
+    val rj45Ports: Int = 0,
+    val sfpPorts: Int = 0
 )
 
 data class CreateDeviceRequest(
@@ -44,7 +47,10 @@ data class CreateDeviceRequest(
     val heightU: Int = 1,
     val positionU: Int? = null, // Can be null if not yet placed
     val status: DeviceStatus = DeviceStatus.ACTIVE,
-    val rackId: UUID? = null
+    val rackId: UUID? = null,
+    val siteId: UUID? = null,
+    val rj45Ports: Int = 0,
+    val sfpPorts: Int = 0
 )
 
 // Shared extension functions for mapping
@@ -60,7 +66,10 @@ fun Device.toDeviceDto() = DeviceDto(
     heightU = this.heightU,
     status = this.status,
     rackId = this.rack?.id,
-    rackName = this.rack?.name
+    rackName = this.rack?.name,
+    siteId = this.site?.id,
+    rj45Ports = this.rj45Ports,
+    sfpPorts = this.sfpPorts
 )
 
 fun Rack.toRackDto(devices: List<Device> = emptyList()) = RackDto(

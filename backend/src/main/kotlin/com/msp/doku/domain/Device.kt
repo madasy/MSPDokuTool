@@ -54,6 +54,12 @@ class Device(
     @Column(name = "mac_address")
     var macAddress: String? = null,
 
+    @Column(name = "rj45_ports")
+    var rj45Ports: Int = 0,
+
+    @Column(name = "sfp_ports")
+    var sfpPorts: Int = 0,
+
     // If not in Rack
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id")
