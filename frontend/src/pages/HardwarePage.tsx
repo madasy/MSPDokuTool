@@ -16,6 +16,8 @@ interface HardwareDevice {
     rack: string;
     positionU: number | null;
     heightU: number;
+    rj45Ports?: number;
+    sfpPorts?: number;
 }
 
 // Mock hardware data
@@ -253,11 +255,15 @@ function AddDeviceModal({ onClose, onAdd }: { onClose: () => void; onAdd: (devic
     const [mac, setMac] = useState('');
     const [status, setStatus] = useState<HardwareDevice['status']>('ACTIVE');
     const [heightU, setHeightU] = useState(1);
+    const [rj45Ports, setRj45Ports] = useState(0);
+    const [sfpPorts, setSfpPorts] = useState(0);
+
+    const showPortFields = deviceType === 'SWITCH' || deviceType === 'FIREWALL';
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!name.trim()) return;
-        onAdd({ name, deviceType, model, serial, ip, mac, status, rack: '', positionU: null, heightU });
+        onAdd({ name, deviceType, model, serial, ip, mac, status, rack: '', positionU: null, heightU, rj45Ports: showPortFields ? rj45Ports : 0, sfpPorts: showPortFields ? sfpPorts : 0 });
     };
 
     return (
@@ -316,6 +322,21 @@ function AddDeviceModal({ onClose, onAdd }: { onClose: () => void; onAdd: (devic
                             <input type="number" value={heightU} onChange={e => setHeightU(parseInt(e.target.value) || 1)} className="input" min={1} max={48} />
                         </div>
                     </div>
+                    {showPortFields && (
+                        <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
+                            <div className="col-span-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                                Port-Konfiguration
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">RJ45 Ports</label>
+                                <input type="number" value={rj45Ports} onChange={e => setRj45Ports(parseInt(e.target.value) || 0)} className="input" min={0} max={96} placeholder="z.B. 48" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">SFP Ports</label>
+                                <input type="number" value={sfpPorts} onChange={e => setSfpPorts(parseInt(e.target.value) || 0)} className="input" min={0} max={32} placeholder="z.B. 4" />
+                            </div>
+                        </div>
+                    )}
                     <div className="flex justify-end gap-3 pt-2">
                         <button type="button" onClick={onClose} className="btn-secondary text-xs">Abbrechen</button>
                         <button type="submit" className="btn-primary text-xs">Gerät erstellen</button>

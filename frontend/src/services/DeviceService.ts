@@ -13,6 +13,8 @@ export interface Device {
     rackName?: string;
     positionU?: number;
     heightU: number;
+    rj45Ports?: number;
+    sfpPorts?: number;
 }
 
 export type CreateDeviceRequest = Omit<Device, 'id' | 'rackName'>;

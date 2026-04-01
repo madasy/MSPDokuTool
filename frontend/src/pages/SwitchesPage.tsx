@@ -131,9 +131,22 @@ export default function SwitchesPage() {
         });
     }
 
+    const rj45Count = activeSwitch?.rj45Ports ?? 0;
+    const sfpCount = activeSwitch?.sfpPorts ?? 0;
+    const totalPorts = ports?.length ?? 0;
+
+    // Separate RJ45 ports (1..rj45Count) from SFP ports (rj45Count+1..total)
+    // If device has no port count config, treat all as RJ45
+    const rj45Ports = rj45Count > 0
+        ? (ports?.filter(p => p.portNumber <= rj45Count) ?? [])
+        : (ports ?? []);
+    const sfpPorts  = rj45Count > 0 && sfpCount > 0
+        ? (ports?.filter(p => p.portNumber > rj45Count) ?? [])
+        : [];
+
     // Split ports into odd (top row) and even (bottom row)
-    const oddPorts  = ports?.filter(p => p.portNumber % 2 !== 0) ?? [];
-    const evenPorts = ports?.filter(p => p.portNumber % 2 === 0) ?? [];
+    const oddPorts  = rj45Ports.filter(p => p.portNumber % 2 !== 0);
+    const evenPorts = rj45Ports.filter(p => p.portNumber % 2 === 0);
 
     // Unique VLANs in use
     const vlanIds = [...new Set(ports?.map(p => p.accessVlanId).filter(Boolean) as number[])];
@@ -214,18 +227,32 @@ export default function SwitchesPage() {
                                 <div className="card p-8 text-center">
                                     <Monitor size={32} className="text-slate-300 mx-auto mb-3" />
                                     <p className="text-sm text-slate-500 mb-4">Keine Ports konfiguriert</p>
-                                    <div className="flex items-center justify-center gap-3">
-                                        {[24, 48].map(count => (
+                                    <div className="flex items-center justify-center gap-3 flex-wrap">
+                                        {activeSwitch && (activeSwitch.rj45Ports ?? 0) + (activeSwitch.sfpPorts ?? 0) > 0 ? (
                                             <button
-                                                key={count}
-                                                onClick={() => initMutation.mutate(count)}
+                                                onClick={() => initMutation.mutate((activeSwitch.rj45Ports ?? 0) + (activeSwitch.sfpPorts ?? 0))}
                                                 disabled={initMutation.isPending}
                                                 className="btn-primary text-xs flex items-center gap-1"
                                             >
                                                 {initMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
-                                                {count} Ports initialisieren
+                                                {(activeSwitch.rj45Ports ?? 0) + (activeSwitch.sfpPorts ?? 0)} Ports initialisieren
+                                                {(activeSwitch.rj45Ports ?? 0) > 0 && (activeSwitch.sfpPorts ?? 0) > 0 && (
+                                                    <span className="text-primary-200 ml-1">({activeSwitch.rj45Ports} RJ45 + {activeSwitch.sfpPorts} SFP)</span>
+                                                )}
                                             </button>
-                                        ))}
+                                        ) : (
+                                            [24, 48].map(count => (
+                                                <button
+                                                    key={count}
+                                                    onClick={() => initMutation.mutate(count)}
+                                                    disabled={initMutation.isPending}
+                                                    className="btn-primary text-xs flex items-center gap-1"
+                                                >
+                                                    {initMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                                                    {count} Ports initialisieren
+                                                </button>
+                                            ))
+                                        )}
                                     </div>
                                 </div>
                             ) : (
@@ -252,31 +279,58 @@ export default function SwitchesPage() {
                                     {/* Port faceplate */}
                                     <div className="card p-4">
                                         <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-4">
-                                            Port-Übersicht ({ports.length} Ports)
+                                            Port-Übersicht ({totalPorts} Ports{sfpPorts.length > 0 ? ` · ${rj45Ports.length} RJ45 + ${sfpPorts.length} SFP` : ''})
                                         </p>
-                                        <div className="bg-slate-800 rounded-xl p-4 space-y-1.5 overflow-x-auto">
-                                            {/* Odd ports — top row */}
-                                            <div className="flex gap-1">
-                                                {oddPorts.map(port => (
-                                                    <PortSquare
-                                                        key={port.id}
-                                                        port={port}
-                                                        isSelected={selectedPort?.id === port.id}
-                                                        onClick={() => handlePortClick(port)}
-                                                    />
-                                                ))}
-                                            </div>
-                                            {/* Even ports — bottom row */}
-                                            <div className="flex gap-1">
-                                                {evenPorts.map(port => (
-                                                    <PortSquare
-                                                        key={port.id}
-                                                        port={port}
-                                                        isSelected={selectedPort?.id === port.id}
-                                                        onClick={() => handlePortClick(port)}
-                                                    />
-                                                ))}
-                                            </div>
+                                        <div className="bg-slate-800 rounded-xl p-4 space-y-3 overflow-x-auto">
+                                            {/* RJ45 section */}
+                                            {rj45Ports.length > 0 && (
+                                                <div>
+                                                    {sfpPorts.length > 0 && (
+                                                        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">RJ45</p>
+                                                    )}
+                                                    <div className="space-y-1.5">
+                                                        {/* Odd ports — top row */}
+                                                        <div className="flex gap-1">
+                                                            {oddPorts.map(port => (
+                                                                <PortSquare
+                                                                    key={port.id}
+                                                                    port={port}
+                                                                    isSelected={selectedPort?.id === port.id}
+                                                                    onClick={() => handlePortClick(port)}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                        {/* Even ports — bottom row */}
+                                                        <div className="flex gap-1">
+                                                            {evenPorts.map(port => (
+                                                                <PortSquare
+                                                                    key={port.id}
+                                                                    port={port}
+                                                                    isSelected={selectedPort?.id === port.id}
+                                                                    onClick={() => handlePortClick(port)}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {/* SFP section */}
+                                            {sfpPorts.length > 0 && (
+                                                <div className="border-t border-slate-600 pt-3">
+                                                    <p className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-1.5">SFP</p>
+                                                    <div className="flex gap-1 flex-wrap">
+                                                        {sfpPorts.map(port => (
+                                                            <PortSquare
+                                                                key={port.id}
+                                                                port={port}
+                                                                isSelected={selectedPort?.id === port.id}
+                                                                onClick={() => handlePortClick(port)}
+                                                                isSfp
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -408,23 +462,26 @@ export default function SwitchesPage() {
     );
 }
 
-function PortSquare({ port, isSelected, onClick }: {
+function PortSquare({ port, isSelected, onClick, isSfp = false }: {
     port: SwitchPort;
     isSelected: boolean;
     onClick: () => void;
+    isSfp?: boolean;
 }) {
     return (
         <button
             onClick={onClick}
-            title={`Port ${port.portNumber}${port.portName ? ` — ${port.portName}` : ''}${port.connectedDevice ? ` → ${port.connectedDevice}` : ''}\nStatus: ${port.status}\nVLAN: ${port.accessVlanId ?? '-'}`}
+            title={`${isSfp ? 'SFP ' : ''}Port ${port.portNumber}${port.portName ? ` — ${port.portName}` : ''}${port.connectedDevice ? ` → ${port.connectedDevice}` : ''}\nStatus: ${port.status}\nVLAN: ${port.accessVlanId ?? '-'}`}
             className={cn(
-                'w-7 h-7 rounded-sm flex-shrink-0 flex items-center justify-center text-[9px] font-bold text-white transition-all ring-2',
+                'flex-shrink-0 flex flex-col items-center justify-center font-bold text-white transition-all ring-2',
+                isSfp ? 'w-9 h-9 rounded text-[8px] gap-0.5' : 'w-7 h-7 rounded-sm text-[9px]',
                 getVlanColor(port.accessVlanId),
                 getStatusColor(port.status),
                 isSelected ? 'ring-offset-2 ring-offset-slate-800 scale-110' : 'ring-offset-1 ring-offset-slate-800 hover:scale-105'
             )}
         >
-            {port.portNumber}
+            {isSfp && <span className="text-[7px] font-semibold opacity-80 leading-none">SFP</span>}
+            <span>{port.portNumber}</span>
         </button>
     );
 }
