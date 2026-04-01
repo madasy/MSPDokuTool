@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { RackService, type Rack, type RackDevice } from '../services/RackService';
+import { RackService, type RackDevice } from '../services/RackService';
 import { DeviceService } from '../services/DeviceService';
 import RackVisualization from '../components/rack/RackVisualization';
 import { Cpu, Monitor, X, Wifi, Shield, Box, Loader2 } from 'lucide-react';
