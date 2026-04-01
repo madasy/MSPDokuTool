@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { UserPlus, Trash2, Loader2, X, ShieldCheck, User } from 'lucide-react';
-import { UserService, AutheliaUser, CreateUserRequest } from '../services/UserService';
+import { UserService, type AutheliaUser, type CreateUserRequest } from '../services/UserService';
 import { TenantService } from '../services/TenantService';
 import { useToast } from '../components/ui/Toast';
 
