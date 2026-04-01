@@ -94,8 +94,8 @@ export default function TenantListPage() {
 
             {/* Create Modal */}
             {isCreateModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 w-full max-w-md shadow-2xl border border-white/60">
+                <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl border border-slate-200 dark:border-slate-700">
                         <div className="flex items-center justify-between mb-5">
                             <h2 className="text-lg font-bold text-slate-800">Neuer Tenant</h2>
                             <button onClick={() => setIsCreateModalOpen(false)} className="btn-icon">

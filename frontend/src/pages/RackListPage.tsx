@@ -61,8 +61,8 @@ export default function RackListPage() {
     return (
         <div className="flex h-full">
             {/* Left Panel: Unplaced Devices */}
-            <div className="w-60 border-r border-white/60 bg-white/80 backdrop-blur flex-shrink-0 flex flex-col">
-                <div className="p-4 border-b border-white/70">
+            <div className="w-60 border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0 flex flex-col">
+                <div className="p-4 border-b border-slate-200 dark:border-slate-700">
                     <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                         <Box size={14} className="text-slate-400" />
                         Lager / Unplatziert
@@ -87,7 +87,7 @@ export default function RackListPage() {
                                 'w-full text-left px-3 py-2.5 rounded-xl border transition-colors text-xs',
                                 selectedDevice?.id === device.id
                                     ? 'bg-primary-50 border-primary-200 text-primary-700'
-                                    : 'bg-white/80 border-white/60 text-slate-600 hover:bg-white'
+                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-white'
                             )}
                         >
                             <div className="flex items-center gap-2 mb-1">
@@ -107,7 +107,7 @@ export default function RackListPage() {
             </div>
 
             {/* Center: Rack Visualization */}
-            <div className="flex-1 flex items-start justify-center overflow-auto p-6 bg-white/60">
+            <div className="flex-1 flex items-start justify-center overflow-auto p-6 bg-slate-50 dark:bg-slate-900">
                 {firstRack && (
                     <RackVisualization
                         rack={{
@@ -133,12 +133,12 @@ export default function RackListPage() {
 
             {/* Right Panel: Device Detail */}
             <div className={cn(
-                'w-72 border-l border-white/60 bg-white/85 backdrop-blur flex-shrink-0 flex flex-col transition-all',
+                'w-72 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0 flex flex-col transition-all',
                 selectedDevice ? 'translate-x-0' : 'translate-x-full hidden'
             )}>
                 {selectedDevice && (
                     <>
-                        <div className="p-4 border-b border-white/70 flex items-center justify-between">
+                        <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                             <h3 className="text-sm font-semibold text-slate-800 truncate">{selectedDevice.name}</h3>
                             <button onClick={() => setSelectedDevice(null)} className="btn-icon">
                                 <X size={14} />
