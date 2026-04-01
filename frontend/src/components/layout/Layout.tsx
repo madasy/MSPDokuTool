@@ -1,4 +1,4 @@
-import { LayoutDashboard, Network, Server, Users, LogOut, ChevronRight, Star, Globe, Search, ChevronsUpDown, Check, Building, Menu, X, StarOff, Cpu, Building2, Monitor } from 'lucide-react';
+import { LayoutDashboard, Network, Server, Users, LogOut, ChevronRight, Star, Globe, Search, ChevronsUpDown, Check, Building, Menu, X, StarOff, Cpu, Building2, Monitor, FileText } from 'lucide-react';
 import { NavLink, Outlet, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TenantService } from '../../services/TenantService';
@@ -108,6 +108,7 @@ export default function Layout() {
                                 <NavItem to={`/tenants/${tenantId}/racks`} icon={<Server size={18} />} label="Racks" />
                                 <NavItem to={`/tenants/${tenantId}/network`} icon={<Network size={18} />} label="IP-Plan" />
                                 <NavItem to={`/tenants/${tenantId}/switches`} icon={<Monitor size={18} />} label="Switches" />
+                                <NavItem to={`/tenants/${tenantId}/docs`} icon={<FileText size={18} />} label="Dokumentation" />
                             </div>
                         </div>
                     )}

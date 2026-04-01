@@ -14,6 +14,7 @@ import NetworkPage from './pages/NetworkPage';
 import DatacenterPage from './pages/DatacenterPage';
 import SitesPage from './pages/SitesPage';
 import SwitchesPage from './pages/SwitchesPage';
+import DocumentationPage from './pages/DocumentationPage';
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ function App() {
                     <Route path="tenants/:tenantId/hardware" element={<ErrorBoundary><HardwarePage /></ErrorBoundary>} />
                     <Route path="tenants/:tenantId/network" element={<ErrorBoundary><NetworkPage /></ErrorBoundary>} />
                     <Route path="tenants/:tenantId/switches" element={<ErrorBoundary><SwitchesPage /></ErrorBoundary>} />
+                    <Route path="tenants/:tenantId/docs" element={<ErrorBoundary><DocumentationPage /></ErrorBoundary>} />
                   </Route>
                 </Routes>
               </BrowserRouter>
