@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { Server, Network, ArrowRight, Loader2 } from 'lucide-react';
+import { Server, Network, ArrowRight, Loader2, Building2, Cpu, Monitor, Wifi, FileText } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { TenantService, type Tenant } from '../services/TenantService';
 
@@ -67,8 +67,13 @@ export default function TenantDashboardPage() {
                     <h2 className="font-semibold text-slate-900 dark:text-white">Schnellzugriff</h2>
                 </div>
                 <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                    <QuickLink icon={<Building2 size={16} />} label="Standorte & Räume" to={`/tenants/${tenantId}/sites`} />
                     <QuickLink icon={<Server size={16} />} label="Racks & Hardware" to={`/tenants/${tenantId}/racks`} />
+                    <QuickLink icon={<Cpu size={16} />} label="Hardware" to={`/tenants/${tenantId}/hardware`} />
                     <QuickLink icon={<Network size={16} />} label="IP-Plan & Netzwerk" to={`/tenants/${tenantId}/network`} />
+                    <QuickLink icon={<Monitor size={16} />} label="Switches" to={`/tenants/${tenantId}/switches`} />
+                    <QuickLink icon={<Wifi size={16} />} label="Access Points" to={`/tenants/${tenantId}/access-points`} />
+                    <QuickLink icon={<FileText size={16} />} label="Dokumentation" to={`/tenants/${tenantId}/docs`} />
                 </div>
             </div>
         </div>
