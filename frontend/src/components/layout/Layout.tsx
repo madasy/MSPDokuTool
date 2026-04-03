@@ -1,4 +1,4 @@
-import { LayoutDashboard, Network, Server, Users, LogOut, ChevronRight, Star, Globe, Search, ChevronsUpDown, Check, Building, Menu, X, StarOff, Cpu, Building2, Monitor, FileText, Wifi, Shield, UserPlus } from 'lucide-react';
+import { LayoutDashboard, Network, Server, Users, LogOut, ChevronRight, Star, Globe, Search, ChevronsUpDown, Check, Building, Menu, X, StarOff, Cpu, Building2, Monitor, FileText, Wifi, Shield, UserPlus, Link2 } from 'lucide-react';
 import { NavLink, Outlet, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TenantService } from '../../services/TenantService';
@@ -112,6 +112,7 @@ export default function Layout() {
                                 <NavItem to={`/tenants/${tenantId}`} icon={<LayoutDashboard size={18} />} label="Übersicht" end />
                                 <NavItem to={`/tenants/${tenantId}/sites`} icon={<Building2 size={18} />} label="Standorte" />
                                 <NavItem to={`/tenants/${tenantId}/hardware`} icon={<Cpu size={18} />} label="Hardware" />
+                                <NavItem to={`/tenants/${tenantId}/connections`} icon={<Link2 size={18} />} label="Verbindungen" />
                                 {isModuleVisible('racks') && <NavItem to={`/tenants/${tenantId}/racks`} icon={<Server size={18} />} label="Racks" />}
                                 <NavItem to={`/tenants/${tenantId}/network`} icon={<Network size={18} />} label="IP-Plan" />
                                 {isModuleVisible('switches') && <NavItem to={`/tenants/${tenantId}/switches`} icon={<Monitor size={18} />} label="Switches" />}
