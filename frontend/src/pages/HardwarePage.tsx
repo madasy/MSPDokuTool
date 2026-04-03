@@ -8,6 +8,7 @@ import { DeviceService, type Device, type CreateDeviceRequest } from '../service
 import { SiteService } from '../services/SiteService';
 import { FieldGroup, AdvancedToggle } from '../components/ui/FieldGroup';
 import { useFieldLevel } from '../hooks/useFieldLevel';
+import InlineEdit from '../components/ui/InlineEdit';
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
     SERVER: <Cpu size={14} />,
@@ -160,15 +161,25 @@ export default function HardwarePage() {
                                     device={device}
                                     onEdit={() => setEditingId(device.id)}
                                     onDelete={() => deleteMutation.mutate(device.id)}
+                                    onUpdate={(data) => updateMutation.mutate({ id: device.id, data })}
                                 />
                             )
                         ))}
                     </tbody>
                 </table>
                 {filtered.length === 0 && (
-                    <div className="text-center py-12 text-sm text-slate-400">
-                        Keine Geräte gefunden
-                    </div>
+                    devices.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                            <Cpu size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
+                            <h3 className="text-lg font-semibold text-slate-600 dark:text-slate-300 mb-2">Keine Geräte vorhanden</h3>
+                            <p className="text-sm text-slate-400 dark:text-slate-500 mb-6 max-w-md">Erstelle zunächst einen Standort unter 'Standorte', dann füge hier Geräte hinzu.</p>
+                            <button onClick={() => setShowAddModal(true)} className="btn-primary">+ Gerät hinzufügen</button>
+                        </div>
+                    ) : (
+                        <div className="text-center py-12 text-sm text-slate-400">
+                            Keine Geräte gefunden
+                        </div>
+                    )
                 )}
             </div>
 
@@ -187,30 +198,50 @@ export default function HardwarePage() {
     );
 }
 
-function DeviceRow({ device, onEdit, onDelete }: { device: Device; onEdit: () => void; onDelete: () => void }) {
+const DEVICE_STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }));
+
+function DeviceRow({ device, onEdit, onDelete, onUpdate }: {
+    device: Device;
+    onEdit: () => void;
+    onDelete: () => void;
+    onUpdate: (data: Partial<CreateDeviceRequest>) => void;
+}) {
     return (
         <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50 group">
             <td className="table-cell">
                 <span className="text-slate-400">{TYPE_ICONS[device.deviceType] || <Box size={14} />}</span>
             </td>
-            <td className="table-cell font-medium text-slate-800 dark:text-white">{device.name}</td>
+            <td className="table-cell font-medium text-slate-800 dark:text-white">
+                <InlineEdit
+                    value={device.name}
+                    placeholder="Name..."
+                    onSave={(v) => onUpdate({ name: v })}
+                />
+            </td>
             <td className="table-cell text-xs text-slate-500 dark:text-slate-400">{TYPE_LABELS[device.deviceType] || device.deviceType}</td>
             <td className="table-cell text-xs text-slate-600 dark:text-slate-300">{device.model || '–'}</td>
             <td className="table-cell font-mono text-xs text-slate-500">{device.serial || '–'}</td>
-            <td className="table-cell font-mono text-xs text-slate-700 dark:text-slate-300">{device.ip || '–'}</td>
+            <td className="table-cell font-mono text-xs text-slate-700 dark:text-slate-300">
+                <InlineEdit
+                    value={device.ip || ''}
+                    placeholder="–"
+                    onSave={(v) => onUpdate({ ip: v || undefined })}
+                    className="font-mono"
+                />
+            </td>
             <td className="table-cell font-mono text-xs text-slate-500">{device.mac || '–'}</td>
             <td className="table-cell">
-                <span className={cn('badge text-[10px]',
-                    device.status === 'ACTIVE' && 'badge-ok',
-                    device.status === 'PLANNED' && 'badge-planned',
-                    device.status === 'STORAGE' && 'badge-warning',
-                    device.status === 'RETIRED' && 'badge-error',
-                )}>{STATUS_LABELS[device.status]}</span>
+                <InlineEdit
+                    type="select"
+                    value={device.status}
+                    options={DEVICE_STATUS_OPTIONS}
+                    onSave={(v) => onUpdate({ status: v as Device['status'] })}
+                />
             </td>
             <td className="table-cell text-xs text-slate-500">{device.rackName || '–'}</td>
             <td className="table-cell">
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={onEdit} className="p-1 text-slate-400 hover:text-primary-500" title="Bearbeiten">
+                    <button onClick={onEdit} className="p-1 text-slate-400 hover:text-primary-500" title="Alle Felder bearbeiten">
                         <Edit2 size={14} />
                     </button>
                     <button onClick={onDelete} className="p-1 text-slate-400 hover:text-red-500" title="Löschen">

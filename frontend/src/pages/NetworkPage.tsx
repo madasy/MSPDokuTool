@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { cn } from '../lib/utils';
-import { Copy, Search, Plus, X, Check, ChevronDown, ChevronUp, Trash2, Loader2 } from 'lucide-react';
+import { Copy, Search, Plus, X, Check, ChevronDown, ChevronUp, Trash2, Loader2, Network } from 'lucide-react';
 import { useToast } from '../components/ui/Toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { NetworkService, type Subnet, type IpAddress, type CreateSubnetRequest, type CreateIpAddressRequest, type UpdateIpAddressRequest } from '../services/NetworkService';
+import InlineEdit from '../components/ui/InlineEdit';
 
 const STATUS_OPTIONS = [
     { value: 'manual', label: 'Manuell', badgeClass: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
@@ -79,13 +80,22 @@ export default function NetworkPage() {
 
             {/* Content */}
             <div className="flex-1 overflow-auto p-6 space-y-6">
-                {subnets?.map(subnet => (
-                    <SubnetTable
-                        key={subnet.id}
-                        subnet={subnet}
-                        searchQuery={searchQuery}
-                    />
-                ))}
+                {subnets && subnets.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                        <Network size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
+                        <h3 className="text-lg font-semibold text-slate-600 dark:text-slate-300 mb-2">Kein IP-Plan vorhanden</h3>
+                        <p className="text-sm text-slate-400 dark:text-slate-500 mb-6 max-w-md">Erstelle das erste Subnetz um die Netzwerkdokumentation zu starten. Subnetze können mit VLAN-Tags, Gateway und IP-Adressen dokumentiert werden.</p>
+                        <button onClick={() => setShowAddSubnet(true)} className="btn-primary">+ Subnetz hinzufügen</button>
+                    </div>
+                ) : (
+                    subnets?.map(subnet => (
+                        <SubnetTable
+                            key={subnet.id}
+                            subnet={subnet}
+                            searchQuery={searchQuery}
+                        />
+                    ))
+                )}
             </div>
 
             {/* Add Subnet Modal */}
@@ -234,8 +244,6 @@ function SubnetTable({ subnet, searchQuery }: { subnet: Subnet; searchQuery: str
 }
 
 function IpTableRow({ ip, onUpdate, onDelete }: { ip: IpAddress; onUpdate: (data: UpdateIpAddressRequest) => void; onDelete: () => void }) {
-    const statusOption = STATUS_OPTIONS.find(s => s.value === ip.status) || STATUS_OPTIONS[0];
-
     return (
         <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50 group">
             {/* IP */}
@@ -249,12 +257,20 @@ function IpTableRow({ ip, onUpdate, onDelete }: { ip: IpAddress; onUpdate: (data
             </td>
             {/* Hostname */}
             <td className="table-cell">
-                <InlineEditCell value={ip.hostname || ''} placeholder="–" onSave={(v) => onUpdate({ hostname: v })} />
+                <InlineEdit
+                    value={ip.hostname || ''}
+                    placeholder="Hostname..."
+                    onSave={(v) => onUpdate({ hostname: v })}
+                />
             </td>
             {/* MAC */}
             <td className="table-cell font-mono text-xs">
                 <div className="flex items-center gap-1.5">
-                    <InlineEditCell value={ip.mac || ''} placeholder="–" onSave={(v) => onUpdate({ mac: v })} />
+                    <InlineEdit
+                        value={ip.mac || ''}
+                        placeholder="–"
+                        onSave={(v) => onUpdate({ mac: v })}
+                    />
                     {ip.mac && (
                         <button onClick={() => navigator.clipboard.writeText(ip.mac!)} className="copy-btn" title="MAC kopieren">
                             <Copy size={12} />
@@ -264,22 +280,20 @@ function IpTableRow({ ip, onUpdate, onDelete }: { ip: IpAddress; onUpdate: (data
             </td>
             {/* Status */}
             <td className="table-cell">
-                <select
+                <InlineEdit
+                    type="select"
                     value={ip.status}
-                    onChange={e => onUpdate({ status: e.target.value })}
-                    className={cn(
-                        'text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border-0 cursor-pointer appearance-none outline-none',
-                        statusOption?.badgeClass
-                    )}
-                >
-                    {STATUS_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                </select>
+                    options={STATUS_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
+                    onSave={(v) => onUpdate({ status: v })}
+                />
             </td>
             {/* Description */}
             <td className="table-cell">
-                <InlineEditCell value={ip.description || ''} placeholder="Beschreibung eingeben..." onSave={(v) => onUpdate({ description: v })} />
+                <InlineEdit
+                    value={ip.description || ''}
+                    placeholder="Beschreibung..."
+                    onSave={(v) => onUpdate({ description: v })}
+                />
             </td>
             {/* Actions */}
             <td className="table-cell">
@@ -288,45 +302,6 @@ function IpTableRow({ ip, onUpdate, onDelete }: { ip: IpAddress; onUpdate: (data
                 </button>
             </td>
         </tr>
-    );
-}
-
-function InlineEditCell({ value, placeholder, onSave }: { value: string; placeholder: string; onSave: (value: string) => void }) {
-    const [editing, setEditing] = useState(false);
-    const [text, setText] = useState(value);
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        if (editing) inputRef.current?.focus();
-    }, [editing]);
-
-    // Update internal state if external value changes (e.g. optimistic update reverted)
-    useEffect(() => {
-        setText(value);
-    }, [value]);
-
-    const handleSave = () => {
-        setEditing(false);
-        if (text !== value) onSave(text);
-    };
-
-    if (editing) {
-        return (
-            <input
-                ref={inputRef}
-                value={text}
-                onChange={e => setText(e.target.value)}
-                onBlur={handleSave}
-                onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') { setText(value); setEditing(false); } }}
-                className="w-full text-sm px-1 py-0.5 border border-primary-300 dark:border-primary-600 rounded outline-none bg-primary-50/60 dark:bg-primary-900/30 dark:text-white"
-            />
-        );
-    }
-
-    return (
-        <span onClick={() => setEditing(true)} className="inline-edit px-1 py-0.5 cursor-text text-slate-700 dark:text-slate-300 min-h-[1.5rem] min-w-[2rem] inline-block">
-            {text || <span className="text-slate-300 dark:text-slate-600 italic">{placeholder}</span>}
-        </span>
     );
 }
 
