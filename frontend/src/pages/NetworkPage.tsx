@@ -353,20 +353,7 @@ function AddSubnetModal({ onClose, onAdd, isPending }: { onClose: () => void; on
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!cidr.trim()) return;
-        // NOTE: vlan handling assumes we just pass ID for now or backend handles creation?
-        // Backend currently expects vlanId (UUID) but frontend mockup had number.
-        // For MVP, if we don't have real VLAN objects yet, we might pass vlanId as null and rely on description/vlanName in free text?
-        // Actually CreateSubnetRequest expects vlanId: UUID.
-        // If we don't have VLANs created, we can't link them yet.
-        // Let's pass vlanId as undefined for now effectively, until we implement VLAN management.
-        // Or we assume the user enters a valid UUID? No, user enters "10".
-        // TODO: We need a backend migration to support simple vlan_id (int) on the subnet directly if we don't want full VLAN entities yet.
-        // But `Subnet` entity has `vlan` relation.
-        // For now, I will omit `vlanId` in the request to backend to avoid UUID parse error, and users data "VLAN 10" will sadly be lost unless I add a text field for it or fix backend to support auto-creating VLANs or storing vlan_tag directly.
-        // User request "Create Subnet" should work. I added gateway to backend. I did NOT add raw vlan_tag to backend Subnet entity.
-        // I will temporarily store vlan info in description or ignore it to prevent crash.
-        // BETTER: Put "VLAN 10 - Name" into description if provided.
-
+        // Backend auto-creates VLAN entity when vlanTag is provided
         onAdd({
             cidr,
             description,

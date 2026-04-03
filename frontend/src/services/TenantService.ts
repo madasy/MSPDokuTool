@@ -41,7 +41,7 @@ export interface ActionItem {
     severity: 'critical' | 'warning' | 'info' | 'ok';
     title: string;
     description: string;
-    link: string;
+    link?: string;
 }
 
 export const TenantService = {
