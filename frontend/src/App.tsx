@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from './auth/AuthProvider';
 import LoginPage from './pages/LoginPage';
 import SetupPage from './pages/SetupPage';
 import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
 import DashboardPage from './pages/DashboardPage';
 import TenantListPage from './pages/TenantListPage';
 import TenantDashboardPage from './pages/TenantDashboardPage';
@@ -73,6 +74,7 @@ function AppRoutes() {
         <Route path="tenants/:tenantId/connections" element={<ErrorBoundary><ConnectionsPage /></ErrorBoundary>} />
         <Route path="admin/users" element={<ErrorBoundary><UserManagementPage /></ErrorBoundary>} />
         <Route path="profile" element={<ErrorBoundary><ProfilePage /></ErrorBoundary>} />
+        <Route path="settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
       </Route>
     </Routes>
   );
