@@ -245,21 +245,63 @@ export default function RackListPage() {
         );
     }
 
+    // Check if sites exist for the guided flow
+    const { data: sites } = useQuery({
+        queryKey: ['sites', tenantId],
+        queryFn: () => SiteService.getByTenant(tenantId!),
+        enabled: !!tenantId && (!racks || racks.length === 0),
+    });
+
+    const hasSites = sites && sites.length > 0;
+
     if (!racks || racks.length === 0) {
         return (
             <>
                 <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                        <Box size={48} className="text-slate-300 mx-auto mb-4" />
-                        <p className="text-lg font-semibold text-slate-600">Keine Racks vorhanden</p>
-                        <p className="text-sm text-slate-400 mt-1 mb-5">Erstelle zunächst einen Standort, Raum und Rack.</p>
-                        <button
-                            onClick={() => setShowCreateModal(true)}
-                            className="btn btn-primary"
-                        >
-                            <Plus size={14} />
-                            Rack erstellen
-                        </button>
+                    <div className="text-center max-w-md">
+                        <Box size={48} className="text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-slate-600 dark:text-slate-300 mb-2">Keine Racks vorhanden</h3>
+
+                        {!hasSites ? (
+                            <>
+                                <p className="text-sm text-slate-400 mb-6">
+                                    Um ein Rack zu erstellen, benötigst du zuerst einen Standort mit einem Raum.
+                                </p>
+                                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 text-left mb-6 border border-slate-200 dark:border-slate-700">
+                                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">Schritte:</p>
+                                    <ol className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                                        <li className="flex items-start gap-2">
+                                            <span className="w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                                            <span>Gehe zu <strong>Standorte</strong> und erstelle einen Standort</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                                            <span>Füge einen Raum zum Standort hinzu (z.B. "Serverraum")</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                                            <span>Komme hierher zurück und erstelle ein Rack</span>
+                                        </li>
+                                    </ol>
+                                </div>
+                                <a href={`/tenants/${tenantId}/sites`} className="btn-primary inline-flex items-center gap-2">
+                                    Standort erstellen
+                                </a>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-sm text-slate-400 mb-6">
+                                    Erstelle ein Rack in einem deiner Standorte und Räume.
+                                </p>
+                                <button
+                                    onClick={() => setShowCreateModal(true)}
+                                    className="btn-primary inline-flex items-center gap-2"
+                                >
+                                    <Plus size={14} />
+                                    Neues Rack erstellen
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
                 {showCreateModal && tenantId && (
