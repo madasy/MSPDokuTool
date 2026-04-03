@@ -4,9 +4,21 @@ import {
     Wifi, FileText, Shield, AlertTriangle, CheckCircle, Info, MapPin,
     HardDrive, Rocket,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TenantService, type Tenant, type CategoryScore, type ActionItem } from '../services/TenantService';
 import { DashboardService, type ActivityEntry } from '../services/DashboardService';
+import { useAuth } from '../auth/AuthProvider';
+
+// ─── Profile Labels ──────────────────────────────────────────────────────────
+
+const PROFILE_LABELS: Record<string, string> = {
+    SMALL_OFFICE: 'Kleines Büro',
+    SINGLE_SITE: 'Einzelstandort',
+    MULTI_SITE: 'Multistandort',
+    MANAGED_INFRA: 'Managed Infrastruktur',
+    SECURITY_FOCUSED: 'Sicherheitsfokus',
+    CUSTOM: 'Benutzerdefiniert',
+};
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -120,6 +132,8 @@ function ActivityIcon({ type }: { type: ActivityEntry['type'] }) {
 
 export default function TenantDashboardPage() {
     const { tenantId } = useParams<{ tenantId: string }>();
+    const { user } = useAuth();
+    const queryClient = useQueryClient();
 
     const { data: tenants } = useQuery({
         queryKey: ['tenants'],
@@ -148,6 +162,12 @@ export default function TenantDashboardPage() {
     const levelColorClass = health ? (LEVEL_COLORS[health.overallLevel] ?? 'bg-slate-100 text-slate-700') : null;
     const showWizard = health ? health.overallScore < 50 : false;
 
+    const handleProfileChange = async (newProfile: string) => {
+        if (!tenantId) return;
+        await TenantService.update(tenantId, { profile: newProfile });
+        queryClient.invalidateQueries({ queryKey: ['tenants'] });
+    };
+
     return (
         <div className="page space-y-8">
 
@@ -160,6 +180,23 @@ export default function TenantDashboardPage() {
                             <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold ${levelColorClass}`}>
                                 {levelLabel}
                                 {health && <span className="ml-1 opacity-70">— {Math.round(health.overallScore)}%</span>}
+                            </span>
+                        )}
+                        {user?.role === 'ADMIN' && tenant && (
+                            <select
+                                value={tenant.profile || 'SINGLE_SITE'}
+                                onChange={e => handleProfileChange(e.target.value)}
+                                className="text-xs px-2 py-0.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer hover:border-primary-400 transition-colors focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                title="Kundenprofil"
+                            >
+                                {Object.entries(PROFILE_LABELS).map(([key, label]) => (
+                                    <option key={key} value={key}>{label}</option>
+                                ))}
+                            </select>
+                        )}
+                        {user?.role !== 'ADMIN' && tenant?.profile && (
+                            <span className="text-xs px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                                {PROFILE_LABELS[tenant.profile] ?? tenant.profile}
                             </span>
                         )}
                     </div>

@@ -7,6 +7,7 @@ import CommandPalette from './CommandPalette';
 import { useState, useRef, useEffect } from 'react';
 import { useFavorites } from '../../hooks/useFavorites';
 import { useAuth } from '../../auth/AuthProvider';
+import { useFieldLevel } from '../../hooks/useFieldLevel';
 
 export default function Layout() {
     const location = useLocation();
@@ -26,6 +27,7 @@ export default function Layout() {
 
     const currentTenant = tenants?.find(t => t.id === tenantId);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const { isModuleVisible } = useFieldLevel(tenantId || undefined);
 
     // 3. Persist selected tenant to localStorage
     useEffect(() => {
@@ -110,11 +112,11 @@ export default function Layout() {
                                 <NavItem to={`/tenants/${tenantId}`} icon={<LayoutDashboard size={18} />} label="Übersicht" end />
                                 <NavItem to={`/tenants/${tenantId}/sites`} icon={<Building2 size={18} />} label="Standorte" />
                                 <NavItem to={`/tenants/${tenantId}/hardware`} icon={<Cpu size={18} />} label="Hardware" />
-                                <NavItem to={`/tenants/${tenantId}/racks`} icon={<Server size={18} />} label="Racks" />
+                                {isModuleVisible('racks') && <NavItem to={`/tenants/${tenantId}/racks`} icon={<Server size={18} />} label="Racks" />}
                                 <NavItem to={`/tenants/${tenantId}/network`} icon={<Network size={18} />} label="IP-Plan" />
-                                <NavItem to={`/tenants/${tenantId}/switches`} icon={<Monitor size={18} />} label="Switches" />
-                                <NavItem to={`/tenants/${tenantId}/firewall`} icon={<Shield size={18} />} label="Firewall" />
-                                <NavItem to={`/tenants/${tenantId}/access-points`} icon={<Wifi size={18} />} label="Access Points" />
+                                {isModuleVisible('switches') && <NavItem to={`/tenants/${tenantId}/switches`} icon={<Monitor size={18} />} label="Switches" />}
+                                {isModuleVisible('firewall') && <NavItem to={`/tenants/${tenantId}/firewall`} icon={<Shield size={18} />} label="Firewall" />}
+                                {isModuleVisible('access-points') && <NavItem to={`/tenants/${tenantId}/access-points`} icon={<Wifi size={18} />} label="Access Points" />}
                                 <NavItem to={`/tenants/${tenantId}/docs`} icon={<FileText size={18} />} label="Dokumentation" />
                                 <NavItem to={`/tenants/${tenantId}/users`} icon={<UserPlus size={18} />} label="Benutzer" />
                             </div>

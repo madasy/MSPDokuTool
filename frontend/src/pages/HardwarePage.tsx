@@ -6,6 +6,8 @@ import { cn } from '../lib/utils';
 import { useToast } from '../components/ui/Toast';
 import { DeviceService, type Device, type CreateDeviceRequest } from '../services/DeviceService';
 import { SiteService } from '../services/SiteService';
+import { FieldGroup, AdvancedToggle } from '../components/ui/FieldGroup';
+import { useFieldLevel } from '../hooks/useFieldLevel';
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
     SERVER: <Cpu size={14} />,
@@ -261,6 +263,7 @@ function EditableRow({ device, onSave, onCancel }: { device: Device; onSave: (id
 
 function AddDeviceModal({ tenantId, onClose, onSuccess }: { tenantId: string; onClose: () => void; onSuccess: () => void }) {
     const { addToast } = useToast();
+    const { showAdvanced, toggleAdvanced } = useFieldLevel(tenantId);
     const [name, setName] = useState('');
     const [deviceType, setDeviceType] = useState('SERVER');
     const [model, setModel] = useState('');
@@ -357,22 +360,6 @@ function AddDeviceModal({ tenantId, onClose, onSuccess }: { tenantId: string; on
                             <input value={model} onChange={e => setModel(e.target.value)} className="input" placeholder="z.B. HP Aruba 2930F" />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Seriennummer</label>
-                            <input value={serial} onChange={e => setSerial(e.target.value)} className="input font-mono" placeholder="z.B. SW-2024-0001" />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">IP-Adresse</label>
-                            <input value={ip} onChange={e => setIp(e.target.value)} className="input font-mono" placeholder="z.B. 10.0.0.1" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">MAC-Adresse</label>
-                            <input value={mac} onChange={e => setMac(e.target.value)} className="input font-mono" placeholder="z.B. AA:BB:CC:11:22:33" />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
                             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Status</label>
                             <select value={status} onChange={e => setStatus(e.target.value as Device['status'])} className="input">
                                 {Object.entries(STATUS_LABELS).map(([key, label]) => (
@@ -380,26 +367,45 @@ function AddDeviceModal({ tenantId, onClose, onSuccess }: { tenantId: string; on
                                 ))}
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Höheneinheiten (HE)</label>
-                            <input type="number" value={heightU} onChange={e => setHeightU(parseInt(e.target.value) || 1)} className="input" min={1} max={48} />
-                        </div>
                     </div>
-                    {showPortFields && (
-                        <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
-                            <div className="col-span-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                                Port-Konfiguration
+                    <FieldGroup level="advanced" show={showAdvanced}>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Seriennummer</label>
+                                <input value={serial} onChange={e => setSerial(e.target.value)} className="input font-mono" placeholder="z.B. SW-2024-0001" />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">RJ45 Ports</label>
-                                <input type="number" value={rj45Ports} onChange={e => setRj45Ports(parseInt(e.target.value) || 0)} className="input" min={0} max={96} placeholder="z.B. 48" />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">SFP Ports</label>
-                                <input type="number" value={sfpPorts} onChange={e => setSfpPorts(parseInt(e.target.value) || 0)} className="input" min={0} max={32} placeholder="z.B. 4" />
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">MAC-Adresse</label>
+                                <input value={mac} onChange={e => setMac(e.target.value)} className="input font-mono" placeholder="z.B. AA:BB:CC:11:22:33" />
                             </div>
                         </div>
-                    )}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">IP-Adresse</label>
+                                <input value={ip} onChange={e => setIp(e.target.value)} className="input font-mono" placeholder="z.B. 10.0.0.1" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Höheneinheiten (HE)</label>
+                                <input type="number" value={heightU} onChange={e => setHeightU(parseInt(e.target.value) || 1)} className="input" min={1} max={48} />
+                            </div>
+                        </div>
+                        {showPortFields && (
+                            <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
+                                <div className="col-span-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                                    Port-Konfiguration
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">RJ45 Ports</label>
+                                    <input type="number" value={rj45Ports} onChange={e => setRj45Ports(parseInt(e.target.value) || 0)} className="input" min={0} max={96} placeholder="z.B. 48" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">SFP Ports</label>
+                                    <input type="number" value={sfpPorts} onChange={e => setSfpPorts(parseInt(e.target.value) || 0)} className="input" min={0} max={32} placeholder="z.B. 4" />
+                                </div>
+                            </div>
+                        )}
+                    </FieldGroup>
+                    <AdvancedToggle show={showAdvanced} onToggle={toggleAdvanced} />
                     <div className="flex justify-end gap-3 pt-2">
                         <button type="button" onClick={onClose} className="btn-secondary text-xs">Abbrechen</button>
                         <button type="submit" disabled={createMutation.isPending || !siteId} className="btn-primary text-xs">

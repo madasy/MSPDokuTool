@@ -6,6 +6,9 @@ export interface Tenant {
     identifier: string;
     createdAt?: string;
     updatedAt?: string;
+    profile?: string;
+    hiddenModules?: string[];
+    showAdvancedFields?: boolean;
 }
 
 export interface CreateTenantRequest {
@@ -47,6 +50,8 @@ export const TenantService = {
         method: 'POST',
         body: JSON.stringify(data),
     }),
+    update: (id: string, data: { name?: string; profile?: string; hiddenModules?: string[]; showAdvancedFields?: boolean }) =>
+        apiFetch<Tenant>(`/tenants/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     getSummary: (tenantId: string) => apiFetch<TenantSummary>(`/tenants/${tenantId}/summary`),
     getHealth: (tenantId: string) => apiFetch<TenantHealth>(`/tenants/${tenantId}/health`),
 };
