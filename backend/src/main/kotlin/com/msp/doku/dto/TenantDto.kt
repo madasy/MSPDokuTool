@@ -23,3 +23,23 @@ data class TenantSummaryDto(
     val ipUtilization: Double,
     val rackCount: Long
 )
+
+data class TenantHealthDto(
+    val overallScore: Int,
+    val overallLevel: String,  // "basic", "operational", "managed", "fully_documented"
+    val categories: List<CategoryScoreDto>,
+    val actions: List<ActionItemDto>
+)
+
+data class CategoryScoreDto(
+    val category: String,
+    val score: Int,
+    val color: String  // "green", "amber", "red"
+)
+
+data class ActionItemDto(
+    val severity: String,  // "critical", "warning", "info", "ok"
+    val title: String,
+    val description: String,
+    val link: String
+)

@@ -2,6 +2,7 @@ package com.msp.doku.controller
 
 import com.msp.doku.dto.CreateTenantRequest
 import com.msp.doku.dto.TenantDto
+import com.msp.doku.dto.TenantHealthDto
 import com.msp.doku.dto.TenantSummaryDto
 import com.msp.doku.service.TenantService
 import org.springframework.http.HttpStatus
@@ -34,5 +35,10 @@ class TenantController(
     @GetMapping("/{id}/summary")
     fun getTenantSummary(@PathVariable id: UUID): TenantSummaryDto {
         return tenantService.getSummary(id)
+    }
+
+    @GetMapping("/{id}/health")
+    fun getTenantHealth(@PathVariable id: UUID): TenantHealthDto {
+        return tenantService.getHealth(id)
     }
 }
