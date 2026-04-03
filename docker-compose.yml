@@ -16,17 +16,45 @@ services:
       timeout: 5s
       retries: 5
 
-  authelia:
-    image: authelia/authelia:latest
-    container_name: mspdoku-authelia
-    volumes:
-      - ./authelia:/config
-      - ./certs:/certs:ro
+  zitadel-db:
+    image: postgres:16-alpine
+    container_name: mspdoku-zitadel-db
     environment:
-      TZ: Europe/Zurich
-    expose:
-      - "9091"
-    restart: unless-stopped
+      POSTGRES_DB: zitadel
+      POSTGRES_USER: zitadel
+      POSTGRES_PASSWORD: zitadel
+    volumes:
+      - zitadel_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U zitadel -d zitadel" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  zitadel:
+    image: ghcr.io/zitadel/zitadel:latest
+    container_name: mspdoku-zitadel
+    command: start-from-init --masterkey "MasterkeyNeedsToHave32Characters" --tlsMode disabled
+    environment:
+      ZITADEL_DATABASE_POSTGRES_HOST: zitadel-db
+      ZITADEL_DATABASE_POSTGRES_PORT: 5432
+      ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: disable
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: zitadel
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: zitadel
+      ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
+      ZITADEL_EXTERNALSECURE: "false"
+      ZITADEL_EXTERNALPORT: 8085
+      ZITADEL_EXTERNALDOMAIN: localhost
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: admin
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: "Admin123!"
+    ports:
+      - "8085:8080"
+    depends_on:
+      zitadel-db:
+        condition: service_healthy
 
   backend:
     build:
@@ -39,8 +67,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mspdoku
       SPRING_DATASOURCE_USERNAME: mspuser
       SPRING_DATASOURCE_PASSWORD: msppassword
-    volumes:
-      - ./authelia:/authelia-config
+      ZITADEL_ISSUER: http://localhost:8085
+      ZITADEL_API: http://zitadel:8080
     depends_on:
       postgres:
         condition: service_healthy
@@ -52,12 +80,9 @@ services:
     container_name: mspdoku-frontend
     ports:
       - "3000:80"
-      - "3443:443"
-    volumes:
-      - ./certs:/etc/nginx/certs:ro
     depends_on:
       - backend
-      - authelia
 
 volumes:
   postgres_data:
+  zitadel_data:
