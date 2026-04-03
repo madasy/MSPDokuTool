@@ -2,9 +2,12 @@ package com.msp.doku.service
 
 import com.msp.doku.domain.AgentKey
 import com.msp.doku.domain.AgentReport
+import com.msp.doku.domain.NetworkScanResult
 import com.msp.doku.dto.*
 import com.msp.doku.repository.AgentKeyRepository
 import com.msp.doku.repository.AgentReportRepository
+import com.msp.doku.repository.DeviceRepository
+import com.msp.doku.repository.NetworkScanResultRepository
 import com.msp.doku.repository.TenantRepository
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
@@ -16,7 +19,9 @@ import java.util.UUID
 class AgentService(
     private val agentKeyRepository: AgentKeyRepository,
     private val agentReportRepository: AgentReportRepository,
-    private val tenantRepository: TenantRepository
+    private val tenantRepository: TenantRepository,
+    private val deviceRepository: DeviceRepository,
+    private val networkScanResultRepository: NetworkScanResultRepository
 ) {
     private val passwordEncoder = BCryptPasswordEncoder()
 
@@ -99,7 +104,47 @@ class AgentService(
         report.agentVersion = request.agentVersion
         report.reportedAt = Instant.now()
 
-        return agentReportRepository.save(report).toDto()
+        // New security/network fields
+        report.rebootRequired = request.rebootRequired
+        report.avProduct = request.avProduct
+        report.avVersion = request.avVersion
+        report.firewallEnabled = request.firewallEnabled
+        report.firewallProduct = request.firewallProduct
+        report.isStaticIp = request.isStaticIP
+        report.defaultGateway = request.defaultGateway
+        report.dnsServers = request.dnsServers?.joinToString(",")
+
+        val saved = agentReportRepository.save(report)
+
+        // Auto-link to existing device by hostname or management IP
+        if (saved.linkedDevice == null) {
+            val devices = deviceRepository.findByTenantId(tenantId)
+            val matched = devices.find { device ->
+                device.name.equals(saved.hostname, ignoreCase = true) ||
+                device.managementIp != null && request.ipAddresses?.contains(device.managementIp) == true
+            }
+            if (matched != null) {
+                saved.linkedDevice = matched
+                agentReportRepository.save(saved)
+            }
+        }
+
+        // Save scan results (clear old, insert new)
+        if (request.networkScanResults != null) {
+            networkScanResultRepository.deleteByAgentReportId(saved.id!!)
+            for (scan in request.networkScanResults) {
+                networkScanResultRepository.save(NetworkScanResult(
+                    agentReport = saved,
+                    ipAddress = scan.ip,
+                    hostname = scan.hostname,
+                    macAddress = scan.mac,
+                    openPorts = scan.openPorts?.joinToString(","),
+                    status = scan.status
+                ))
+            }
+        }
+
+        return saved.toDto()
     }
 
     private fun AgentKey.toDto() = AgentKeyDto(
@@ -107,18 +152,39 @@ class AgentService(
         isActive = this.isActive, lastUsed = this.lastUsed, createdAt = this.createdAt
     )
 
-    private fun AgentReport.toDto() = AgentReportDto(
-        id = this.id!!, tenantId = this.tenant.id!!, hostname = this.hostname,
-        osName = this.osName, osVersion = this.osVersion, kernel = this.kernel,
-        cpuModel = this.cpuModel, cpuCores = this.cpuCores,
-        ramTotalMb = this.ramTotalMb, ramUsedMb = this.ramUsedMb,
-        diskTotalGb = this.diskTotalGb, diskUsedGb = this.diskUsedGb,
-        uptimeSeconds = this.uptimeSeconds,
-        ipAddresses = this.ipAddresses?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
-        macAddresses = this.macAddresses?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
-        pendingUpdates = this.pendingUpdates, avStatus = this.avStatus,
-        domainJoined = this.domainJoined, domainName = this.domainName,
-        agentVersion = this.agentVersion, reportedAt = this.reportedAt,
-        linkedDeviceId = this.linkedDevice?.id, linkedDeviceName = this.linkedDevice?.name
-    )
+    private fun AgentReport.toDto(): AgentReportDto {
+        val scanResults = networkScanResultRepository.findByAgentReportId(this.id!!)
+            .map { scan ->
+                ScanResultDto(
+                    ip = scan.ipAddress,
+                    hostname = scan.hostname,
+                    mac = scan.macAddress,
+                    openPorts = scan.openPorts?.split(",")?.filter { it.isNotBlank() }?.mapNotNull { it.trim().toIntOrNull() } ?: emptyList(),
+                    status = scan.status
+                )
+            }
+        return AgentReportDto(
+            id = this.id!!, tenantId = this.tenant.id!!, hostname = this.hostname,
+            osName = this.osName, osVersion = this.osVersion, kernel = this.kernel,
+            cpuModel = this.cpuModel, cpuCores = this.cpuCores,
+            ramTotalMb = this.ramTotalMb, ramUsedMb = this.ramUsedMb,
+            diskTotalGb = this.diskTotalGb, diskUsedGb = this.diskUsedGb,
+            uptimeSeconds = this.uptimeSeconds,
+            ipAddresses = this.ipAddresses?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
+            macAddresses = this.macAddresses?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
+            pendingUpdates = this.pendingUpdates, avStatus = this.avStatus,
+            domainJoined = this.domainJoined, domainName = this.domainName,
+            agentVersion = this.agentVersion, reportedAt = this.reportedAt,
+            linkedDeviceId = this.linkedDevice?.id, linkedDeviceName = this.linkedDevice?.name,
+            rebootRequired = this.rebootRequired,
+            avProduct = this.avProduct,
+            avVersion = this.avVersion,
+            firewallEnabled = this.firewallEnabled,
+            firewallProduct = this.firewallProduct,
+            isStaticIp = this.isStaticIp,
+            defaultGateway = this.defaultGateway,
+            dnsServers = this.dnsServers?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
+            scanResults = scanResults
+        )
+    }
 }

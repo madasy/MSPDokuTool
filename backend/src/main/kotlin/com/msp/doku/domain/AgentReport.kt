@@ -36,6 +36,15 @@ class AgentReport(
     @Column(name = "agent_version") var agentVersion: String? = null,
     @Column(name = "reported_at", nullable = false) var reportedAt: Instant = Instant.now(),
 
+    @Column(name = "reboot_required") var rebootRequired: Boolean = false,
+    @Column(name = "av_product") var avProduct: String? = null,
+    @Column(name = "av_version") var avVersion: String? = null,
+    @Column(name = "firewall_enabled") var firewallEnabled: Boolean = false,
+    @Column(name = "firewall_product") var firewallProduct: String? = null,
+    @Column(name = "is_static_ip") var isStaticIp: Boolean = false,
+    @Column(name = "default_gateway") var defaultGateway: String? = null,
+    @Column(name = "dns_servers", columnDefinition = "TEXT") var dnsServers: String? = null,
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "linked_device_id")
     var linkedDevice: Device? = null
