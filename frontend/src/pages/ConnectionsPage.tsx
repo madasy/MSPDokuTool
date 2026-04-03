@@ -109,7 +109,6 @@ export default function ConnectionsPage() {
                     <div className="w-96 flex-shrink-0">
                         <CreateConnectionPanel
                             devices={devices}
-                            tenantId={tenantId!}
                             onClose={() => setShowCreatePanel(false)}
                             onSuccess={() => {
                                 queryClient.invalidateQueries({ queryKey: ['connections', tenantId] });
@@ -194,9 +193,8 @@ interface NewIface {
     type: string;
 }
 
-function CreateConnectionPanel({ devices, tenantId, onClose, onSuccess }: {
+function CreateConnectionPanel({ devices, onClose, onSuccess }: {
     devices: any[];
-    tenantId: string;
     onClose: () => void;
     onSuccess: () => void;
 }) {
