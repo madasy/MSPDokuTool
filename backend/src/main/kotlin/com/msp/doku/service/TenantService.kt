@@ -5,6 +5,7 @@ import com.msp.doku.dto.ActionItemDto
 import com.msp.doku.dto.CategoryScoreDto
 import com.msp.doku.dto.CreateTenantRequest
 import com.msp.doku.dto.TenantDto
+import com.msp.doku.dto.UpdateTenantRequest
 import com.msp.doku.dto.TenantHealthDto
 import com.msp.doku.dto.TenantSummaryDto
 import com.msp.doku.repository.DocumentationRepository
@@ -201,11 +202,24 @@ class TenantService(
         else -> "red"
     }
 
+    @Transactional
+    fun updateTenant(id: UUID, request: UpdateTenantRequest): TenantDto {
+        val tenant = tenantRepository.findById(id).orElseThrow { IllegalArgumentException("Tenant not found") }
+        request.name?.let { tenant.name = it }
+        request.profile?.let { tenant.profile = it }
+        request.hiddenModules?.let { tenant.hiddenModules = it.joinToString(",") }
+        request.showAdvancedFields?.let { tenant.showAdvancedFields = it }
+        return tenantRepository.save(tenant).toDto()
+    }
+
     private fun Tenant.toDto() = TenantDto(
         id = this.id!!,
         name = this.name,
         identifier = this.identifier,
         createdAt = this.createdAt,
-        updatedAt = this.updatedAt
+        updatedAt = this.updatedAt,
+        profile = this.profile,
+        hiddenModules = this.hiddenModules?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
+        showAdvancedFields = this.showAdvancedFields
     )
 }

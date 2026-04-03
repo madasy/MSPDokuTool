@@ -12,5 +12,14 @@ class Tenant(
     var name: String,
 
     @Column(nullable = false, unique = true)
-    var identifier: String
+    var identifier: String,
+
+    @Column(nullable = false)
+    var profile: String = "SINGLE_SITE",
+
+    @Column(name = "hidden_modules")
+    var hiddenModules: String? = null,
+
+    @Column(name = "show_advanced_fields", nullable = false)
+    var showAdvancedFields: Boolean = false,
 ) : BaseEntity()

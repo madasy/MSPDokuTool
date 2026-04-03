@@ -8,12 +8,22 @@ data class TenantDto(
     val name: String,
     val identifier: String,
     val createdAt: Instant?,
-    val updatedAt: Instant?
+    val updatedAt: Instant?,
+    val profile: String,
+    val hiddenModules: List<String>,
+    val showAdvancedFields: Boolean
 )
 
 data class CreateTenantRequest(
     val name: String,
     val identifier: String
+)
+
+data class UpdateTenantRequest(
+    val name: String? = null,
+    val profile: String? = null,
+    val hiddenModules: List<String>? = null,
+    val showAdvancedFields: Boolean? = null
 )
 
 data class TenantSummaryDto(
