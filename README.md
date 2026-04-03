@@ -4,6 +4,20 @@
 
 An open-source IT infrastructure documentation tool built specifically for Managed Service Providers (MSPs). Think of it as an open alternative to tools like Hudu or IT Glue -- focused on network documentation, rack visualization, and structured IT documentation per customer.
 
+## Screenshots
+
+### Global Dashboard
+![MSP Dashboard](docs/screenshots/dashboard_msp.png)
+
+### Tenant Dashboard with Health Scores
+![Tenant Dashboard](docs/screenshots/dashboard.png)
+
+### Tenant Management
+![Tenants](docs/screenshots/tenants.png)
+
+### Rack Visualization
+![Rack View](docs/screenshots/rack.png)
+
 ## Features
 
 ### Multi-Tenant Customer Management
