@@ -1,0 +1,124 @@
+package com.msp.doku.service
+
+import com.msp.doku.domain.AgentKey
+import com.msp.doku.domain.AgentReport
+import com.msp.doku.dto.*
+import com.msp.doku.repository.AgentKeyRepository
+import com.msp.doku.repository.AgentReportRepository
+import com.msp.doku.repository.TenantRepository
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
+import java.util.UUID
+
+@Service
+class AgentService(
+    private val agentKeyRepository: AgentKeyRepository,
+    private val agentReportRepository: AgentReportRepository,
+    private val tenantRepository: TenantRepository
+) {
+    private val passwordEncoder = BCryptPasswordEncoder()
+
+    // --- Agent Key Management ---
+
+    fun getKeysByTenant(tenantId: UUID): List<AgentKeyDto> {
+        return agentKeyRepository.findByTenantId(tenantId).map { it.toDto() }
+    }
+
+    @Transactional
+    fun createKey(request: CreateAgentKeyRequest): CreateAgentKeyResponse {
+        val tenant = tenantRepository.findById(request.tenantId)
+            .orElseThrow { IllegalArgumentException("Tenant not found") }
+
+        // Generate a random API key
+        val rawKey = "msp_${UUID.randomUUID().toString().replace("-", "")}"
+        val keyHash = passwordEncoder.encode(rawKey)
+
+        val key = AgentKey(tenant = tenant, keyHash = keyHash, name = request.name)
+        val saved = agentKeyRepository.save(key)
+
+        return CreateAgentKeyResponse(id = saved.id!!, name = saved.name, apiKey = rawKey)
+    }
+
+    @Transactional
+    fun deleteKey(id: UUID) {
+        agentKeyRepository.deleteById(id)
+    }
+
+    fun validateApiKey(apiKey: String): AgentKey? {
+        val allActive = agentKeyRepository.findByIsActiveTrue()
+        for (key in allActive) {
+            if (passwordEncoder.matches(apiKey, key.keyHash)) {
+                key.lastUsed = Instant.now()
+                agentKeyRepository.save(key)
+                return key
+            }
+        }
+        return null
+    }
+
+    // --- Agent Reports ---
+
+    fun getReportsByTenant(tenantId: UUID): List<AgentReportDto> {
+        return agentReportRepository.findByTenantId(tenantId).map { it.toDto() }
+    }
+
+    @Transactional
+    fun processReport(tenantId: UUID, request: AgentReportRequest): AgentReportDto {
+        val tenant = tenantRepository.findById(tenantId)
+            .orElseThrow { IllegalArgumentException("Tenant not found") }
+
+        // Upsert: update if hostname exists, create otherwise
+        var report = agentReportRepository.findByTenantIdAndHostname(tenantId, request.hostname)
+
+        if (report == null) {
+            report = AgentReport(tenant = tenant, hostname = request.hostname)
+        }
+
+        report.osName = request.osName
+        report.osVersion = request.osVersion
+        report.kernel = request.kernel
+        report.cpuModel = request.cpuModel
+        report.cpuCores = request.cpuCores
+        report.ramTotalMb = request.ramTotalMb
+        report.ramUsedMb = request.ramUsedMb
+        report.diskTotalGb = request.diskTotalGb
+        report.diskUsedGb = request.diskUsedGb
+        report.uptimeSeconds = request.uptimeSeconds
+        report.ipAddresses = request.ipAddresses?.joinToString(",")
+        report.macAddresses = request.macAddresses?.joinToString(",")
+        report.networkInterfaces = request.networkInterfaces?.joinToString(";") { "${it.name}|${it.ip}|${it.mac}|${it.speed}" }
+        report.installedSoftware = request.installedSoftware?.joinToString(",")
+        report.runningServices = request.runningServices?.joinToString(",")
+        report.pendingUpdates = request.pendingUpdates
+        report.avStatus = request.avStatus
+        report.domainJoined = request.domainJoined
+        report.domainName = request.domainName
+        report.lastBoot = request.lastBoot
+        report.agentVersion = request.agentVersion
+        report.reportedAt = Instant.now()
+
+        return agentReportRepository.save(report).toDto()
+    }
+
+    private fun AgentKey.toDto() = AgentKeyDto(
+        id = this.id!!, name = this.name, tenantId = this.tenant.id!!,
+        isActive = this.isActive, lastUsed = this.lastUsed, createdAt = this.createdAt
+    )
+
+    private fun AgentReport.toDto() = AgentReportDto(
+        id = this.id!!, tenantId = this.tenant.id!!, hostname = this.hostname,
+        osName = this.osName, osVersion = this.osVersion, kernel = this.kernel,
+        cpuModel = this.cpuModel, cpuCores = this.cpuCores,
+        ramTotalMb = this.ramTotalMb, ramUsedMb = this.ramUsedMb,
+        diskTotalGb = this.diskTotalGb, diskUsedGb = this.diskUsedGb,
+        uptimeSeconds = this.uptimeSeconds,
+        ipAddresses = this.ipAddresses?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
+        macAddresses = this.macAddresses?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
+        pendingUpdates = this.pendingUpdates, avStatus = this.avStatus,
+        domainJoined = this.domainJoined, domainName = this.domainName,
+        agentVersion = this.agentVersion, reportedAt = this.reportedAt,
+        linkedDeviceId = this.linkedDevice?.id, linkedDeviceName = this.linkedDevice?.name
+    )
+}
