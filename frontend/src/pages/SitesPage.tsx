@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Building2, Plus, Loader2, ChevronDown, ChevronRight, MapPin, DoorOpen, X, Layers } from 'lucide-react';
 import { SiteService, RoomService } from '../services/SiteService';
+import { RackService } from '../services/RackService';
 import type { Site, Room } from '../services/SiteService';
 import { useToast } from '../components/ui/Toast';
 
@@ -91,21 +92,71 @@ function SiteCard({
 }
 
 function RoomRow({ room }: { room: Room }) {
+    const [showAddRack, setShowAddRack] = useState(false);
+    const [rackName, setRackName] = useState('');
+    const queryClient = useQueryClient();
+    const { addToast } = useToast();
+
+    const createRackMutation = useMutation({
+        mutationFn: () => RackService.createInRoom(room.id, { name: rackName, heightUnits: 42 }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['rooms'] });
+            queryClient.invalidateQueries({ queryKey: ['racks'] });
+            setRackName('');
+            setShowAddRack(false);
+            addToast({ type: 'success', title: 'Rack erstellt' });
+        },
+        onError: () => {
+            addToast({ type: 'error', title: 'Fehler beim Erstellen' });
+        },
+    });
+
     return (
-        <div className="flex items-center gap-3 px-4 py-3">
-            <div className="h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 flex items-center justify-center flex-shrink-0">
-                <DoorOpen size={14} />
+        <div className="px-4 py-3">
+            <div className="flex items-center gap-3">
+                <div className="h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 flex items-center justify-center flex-shrink-0">
+                    <DoorOpen size={14} />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{room.name}</p>
+                    {room.floor && (
+                        <p className="text-xs text-slate-400">Etage: {room.floor}</p>
+                    )}
+                </div>
+                <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full flex-shrink-0 flex items-center gap-1">
+                    <Layers size={10} />
+                    {room.rackCount} {room.rackCount === 1 ? 'Rack' : 'Racks'}
+                </span>
+                <button
+                    onClick={() => setShowAddRack(!showAddRack)}
+                    className="text-xs text-primary-500 hover:text-primary-600 font-medium flex items-center gap-1 cursor-pointer"
+                >
+                    <Plus size={12} /> Rack
+                </button>
             </div>
-            <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{room.name}</p>
-                {room.floor && (
-                    <p className="text-xs text-slate-400">Etage: {room.floor}</p>
-                )}
-            </div>
-            <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full flex-shrink-0 flex items-center gap-1">
-                <Layers size={10} />
-                {room.rackCount} {room.rackCount === 1 ? 'Rack' : 'Racks'}
-            </span>
+            {showAddRack && (
+                <div className="flex items-center gap-2 mt-2 ml-10">
+                    <input
+                        type="text"
+                        value={rackName}
+                        onChange={e => setRackName(e.target.value)}
+                        placeholder="Rack-Name (z.B. Rack-01)"
+                        className="input text-xs py-1.5 flex-1"
+                        autoFocus
+                        onKeyDown={e => { if (e.key === 'Enter' && rackName.trim()) createRackMutation.mutate(); if (e.key === 'Escape') setShowAddRack(false); }}
+                    />
+                    <button
+                        onClick={() => createRackMutation.mutate()}
+                        disabled={!rackName.trim() || createRackMutation.isPending}
+                        className="btn-primary text-xs py-1.5 px-3"
+                    >
+                        {createRackMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : 'Erstellen'}
+                    </button>
+                    <button onClick={() => setShowAddRack(false)} className="btn-icon p-1">
+                        <X size={14} />
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
