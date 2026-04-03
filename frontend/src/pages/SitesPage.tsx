@@ -313,11 +313,12 @@ export default function SitesPage() {
 
             {/* Sites list */}
             {sites?.length === 0 ? (
-                <div className="card p-12 text-center">
-                    <Building2 size={32} className="mx-auto text-slate-300 mb-3" />
-                    <p className="text-sm text-slate-500 mb-4">Noch keine Standorte vorhanden.</p>
+                <div className="flex flex-col items-center justify-center py-16 text-center card">
+                    <Building2 size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
+                    <h3 className="text-lg font-semibold text-slate-600 dark:text-slate-300 mb-2">Keine Standorte vorhanden</h3>
+                    <p className="text-sm text-slate-400 dark:text-slate-500 mb-6 max-w-md">Erstelle den ersten Standort mit Räumen für die Infrastruktur. Standorte bilden die Basis für Racks und Geräte.</p>
                     <button onClick={() => setIsCreateSiteOpen(true)} className="btn-primary">
-                        Ersten Standort erstellen
+                        + Neuer Standort
                     </button>
                 </div>
             ) : (

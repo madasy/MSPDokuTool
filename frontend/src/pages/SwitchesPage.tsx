@@ -5,6 +5,7 @@ import { DeviceService, type Device } from '../services/DeviceService';
 import { SwitchPortService, type SwitchPort, type UpdateSwitchPortRequest } from '../services/SwitchPortService';
 import { cn } from '../lib/utils';
 import { Monitor, ChevronRight, Loader2, Plus, Save } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useToast } from '../components/ui/Toast';
 
 // VLAN color mapping
@@ -172,8 +173,13 @@ export default function SwitchesPage() {
                 </div>
                 <div className="flex-1 overflow-y-auto">
                     {switches.length === 0 ? (
-                        <div className="p-6 text-center text-sm text-slate-400">
-                            Keine Switches vorhanden
+                        <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                            <Monitor size={36} className="text-slate-300 dark:text-slate-600 mb-3" />
+                            <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-1">Keine Switches vorhanden</h3>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Erstelle zuerst einen Switch unter 'Hardware', dann verwalte hier die Ports.</p>
+                            <Link to="../hardware" relative="path" className="btn-primary text-xs">
+                                Zu Hardware
+                            </Link>
                         </div>
                     ) : (
                         switches.map(sw => (

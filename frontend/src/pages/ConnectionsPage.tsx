@@ -77,17 +77,18 @@ export default function ConnectionsPage() {
                             Verbindungen laden...
                         </div>
                     ) : connections.length === 0 ? (
-                        <div className="card text-center py-16">
-                            <Cable size={40} className="mx-auto mb-4 text-slate-300 dark:text-slate-600" />
-                            <p className="text-slate-500 dark:text-slate-400 text-sm max-w-xs mx-auto">
-                                Keine Verbindungen dokumentiert. Verbinde Geräte um die Netzwerktopologie zu erfassen.
+                        <div className="card flex flex-col items-center justify-center py-16 text-center">
+                            <Link2 size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
+                            <h3 className="text-lg font-semibold text-slate-600 dark:text-slate-300 mb-2">Keine Verbindungen dokumentiert</h3>
+                            <p className="text-sm text-slate-400 dark:text-slate-500 mb-6 max-w-md">
+                                Verbinde Geräte um die Netzwerktopologie zu erfassen. Jede Verbindung wird mit Interface und Kabeltyp dokumentiert.
                             </p>
                             <button
                                 onClick={() => setShowCreatePanel(true)}
-                                className="btn-primary mt-4 inline-flex items-center gap-2"
+                                className="btn-primary inline-flex items-center gap-2"
                             >
                                 <Plus size={14} />
-                                Erste Verbindung anlegen
+                                Neue Verbindung
                             </button>
                         </div>
                     ) : (
