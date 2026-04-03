@@ -1,6 +1,6 @@
 package com.msp.doku.controller
 
-import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -9,17 +9,17 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/auth")
 class AuthController {
 
-    @GetMapping("/me")
-    fun getCurrentUser(): Map<String, Any?> {
-        val auth = SecurityContextHolder.getContext().authentication
-        val details = auth?.details as? Map<*, *>
+    @Value("\${zitadel.issuer:http://localhost:8085}")
+    private lateinit var issuerUri: String
 
+    @GetMapping("/config")
+    fun getAuthConfig(): Map<String, String> {
         return mapOf(
-            "username" to (auth?.name ?: "anonymous"),
-            "email" to (details?.get("email") ?: ""),
-            "displayName" to (details?.get("name") ?: auth?.name ?: ""),
-            "groups" to (details?.get("groups") ?: emptyList<String>()),
-            "authorities" to (auth?.authorities?.map { it.authority } ?: emptyList())
+            "issuer" to issuerUri,
+            "authorizationEndpoint" to "$issuerUri/oauth/v2/authorize",
+            "tokenEndpoint" to "$issuerUri/oauth/v2/token",
+            "userinfoEndpoint" to "$issuerUri/oidc/v1/userinfo",
+            "endSessionEndpoint" to "$issuerUri/oidc/v1/end_session"
         )
     }
 }
