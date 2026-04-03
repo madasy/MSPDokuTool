@@ -60,11 +60,13 @@ Pre-built documentation sections per customer with structured fields + free-text
 11. **Naming Conventions** -- server, network, VLAN naming standards
 
 ### System Agent (Auto-Discovery)
-- Lightweight Go agent for Windows, Linux, and macOS
-- Collects system inventory: hostname, OS, CPU, RAM, disk, IPs, uptime
-- Collects health data: pending updates, AV status, domain join status
-- Reports to the server every 5 minutes via HTTPS
-- API key authentication per tenant
+- Lightweight Go agent for Windows, Linux, and macOS (single binary, zero dependencies)
+- **System inventory**: hostname, OS, CPU, RAM, disk, IPs, uptime, domain status
+- **Security posture**: pending OS updates, reboot required, AV status (Bitdefender/Defender), firewall status
+- **Network info**: static/DHCP detection, default gateway, DNS servers
+- **Network scanning**: optional ping sweep + port scan of subnets (8 common ports)
+- **Auto-links to hardware**: matches agent reports to existing devices by hostname or IP
+- Reports every 5 minutes via HTTPS with API key auth
 - Agent management dashboard with online/offline status
 
 ### Authentication & User Management
@@ -99,7 +101,7 @@ Three containers start automatically: PostgreSQL, Spring Boot backend, and React
 
 ## System Agent
 
-The MSP DokuTool agent is a lightweight Go binary that runs on your clients' servers and workstations. It automatically collects system inventory and health data, then reports it to the dashboard.
+The MSP DokuTool agent is a lightweight Go binary (no dependencies, single file) that runs on your clients' servers and workstations. It collects system inventory, security posture, and health data — then reports it to the dashboard every 5 minutes. Agent data is **automatically linked to hardware devices** by hostname or IP.
 
 ### 1. Create an API Key
 
@@ -118,7 +120,14 @@ cd agent
 docker build -t mspdoku-agent .
 ```
 
-Pre-built binaries for Windows, Linux, and macOS will be available in future releases.
+Cross-compile for other platforms:
+```bash
+# Windows
+GOOS=windows GOARCH=amd64 go build -o mspdoku-agent.exe .
+
+# Linux ARM (Raspberry Pi)
+GOOS=linux GOARCH=arm64 go build -o mspdoku-agent-arm64 .
+```
 
 ### 3. Run the Agent
 
@@ -149,6 +158,12 @@ docker run -d \
   mspdoku-agent
 ```
 
+**With network scanning enabled:**
+```bash
+export MSPDOKU_SCAN_SUBNET=10.0.1.0/24
+./mspdoku-agent
+```
+
 ### 4. Run as a Service
 
 **Linux (systemd):**
@@ -163,6 +178,8 @@ Type=simple
 Environment=MSPDOKU_SERVER=http://your-server:3000
 Environment=MSPDOKU_API_KEY=msp_your_api_key_here
 Environment=MSPDOKU_INTERVAL=5m
+# Optional: enable network scanning
+# Environment=MSPDOKU_SCAN_SUBNET=10.0.1.0/24
 ExecStart=/usr/local/bin/mspdoku-agent
 Restart=always
 RestartSec=10
@@ -185,6 +202,8 @@ nssm start MSPDokuAgent
 
 ### What the Agent Collects
 
+#### System Inventory
+
 | Data | Linux | macOS | Windows |
 |------|-------|-------|---------|
 | Hostname | ✅ | ✅ | ✅ |
@@ -195,10 +214,36 @@ nssm start MSPDokuAgent
 | Disk total/used | ✅ | - | - |
 | IP addresses | ✅ | ✅ | - |
 | Uptime | ✅ | - | - |
-| Pending updates | ✅ (apt) | - | - |
 | Domain join status | - | - | ✅ |
 
-More collectors will be added over time. Contributions welcome!
+#### Security & Compliance
+
+| Data | Linux | macOS | Windows |
+|------|-------|-------|---------|
+| Pending OS updates | ✅ (apt) | ✅ (softwareupdate) | ✅ (Windows Update) |
+| Reboot required | ✅ | - | ✅ (registry) |
+| Antivirus (Bitdefender) | ✅ (bdscan) | - | ✅ (WMI SecurityCenter) |
+| Firewall status | ✅ (ufw/iptables) | ✅ (socketfilterfw) | ✅ (netsh advfirewall) |
+| Static IP detection | ✅ (netplan/interfaces) | - | ✅ (Get-NetIPConfiguration) |
+| Default gateway | ✅ | ✅ | ✅ |
+| DNS servers | ✅ (resolv.conf) | ✅ (scutil) | ✅ (Get-DnsClientServerAddress) |
+
+#### Network Scanning (Optional)
+
+When `MSPDOKU_SCAN_SUBNET` is set, the agent performs a ping sweep + port scan of the specified subnet:
+
+- Scans ports: 22 (SSH), 80 (HTTP), 443 (HTTPS), 445 (SMB), 3389 (RDP), 5985 (WinRM), 8080, 8443
+- 50 concurrent goroutines, 500ms timeout per port
+- Reports: IP, hostname (reverse DNS), open ports, up/down status
+- Results appear in the Agents dashboard under the reporting device
+
+#### Auto-Linking to Hardware
+
+Agent reports are **automatically matched to existing hardware devices** by:
+1. Hostname (case-insensitive match)
+2. Management IP (if any reported IP matches a device's management IP)
+
+This means devices created manually in Hardware are automatically enriched with live agent data — OS version, RAM usage, update status, security posture.
 
 ### Agent Environment Variables
 
@@ -207,6 +252,7 @@ More collectors will be added over time. Contributions welcome!
 | `MSPDOKU_SERVER` | `http://localhost:3000` | MSP DokuTool server URL |
 | `MSPDOKU_API_KEY` | *(required)* | API key from the Agents page |
 | `MSPDOKU_INTERVAL` | `5m` | How often to report (e.g. `1m`, `5m`, `15m`) |
+| `MSPDOKU_SCAN_SUBNET` | *(disabled)* | Enable network scan (e.g. `10.0.1.0/24`) |
 
 ## Tech Stack
 
@@ -360,7 +406,7 @@ MSPDokuTool/
       dto/                  # Data transfer objects
       config/               # Security, JWT filter, CORS
     src/main/resources/
-      db/migration/         # Flyway SQL migrations (V1-V15)
+      db/migration/         # Flyway SQL migrations (V1-V16)
   frontend/
     src/
       auth/                 # AuthProvider (JWT context)
