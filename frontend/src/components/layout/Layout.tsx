@@ -176,18 +176,6 @@ export default function Layout() {
 
 /* --- Sub-Components --- */
 
-function LogoutButton() {
-    const { logout } = useAuth();
-    return (
-        <button
-            onClick={logout}
-            className="flex items-center gap-3 w-full px-3 py-2.5 text-xs text-white/50 hover:text-white transition-colors rounded-xl hover:bg-white/5 font-medium cursor-pointer"
-        >
-            <LogOut size={16} />
-            <span>Abmelden</span>
-        </button>
-    );
-}
 
 function TenantSwitcher({
     tenants,

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Cpu, Monitor, Shield, Wifi, Box, Plus, Search, Edit2, Trash2, X, Check, Server, Loader2 } from 'lucide-react';
-import { cn } from '../lib/utils';
 import { useToast } from '../components/ui/Toast';
 import { DeviceService, type Device, type CreateDeviceRequest } from '../services/DeviceService';
 import { SiteService } from '../services/SiteService';

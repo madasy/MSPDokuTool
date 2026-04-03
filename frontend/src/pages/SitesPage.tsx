@@ -69,7 +69,7 @@ function SiteCard({
                     ) : rooms && rooms.length > 0 ? (
                         <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
                             {rooms.map((room: Room) => (
-                                <RoomRow key={room.id} room={room} tenantId={tenantId} siteId={site.id} />
+                                <RoomRow key={room.id} room={room} tenantId={tenantId} />
                             ))}
                         </div>
                     ) : (
@@ -94,7 +94,7 @@ function SiteCard({
     );
 }
 
-function RoomRow({ room, tenantId, siteId }: { room: Room; tenantId: string; siteId: string }) {
+function RoomRow({ room, tenantId }: { room: Room; tenantId: string }) {
     const [showAddRack, setShowAddRack] = useState(false);
     const [rackName, setRackName] = useState('');
     const queryClient = useQueryClient();
