@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DeviceService, type Device } from '../services/DeviceService';
 import { FirewallService, type FirewallInterface, type CreateFirewallInterfaceRequest, type UpdateFirewallInterfaceRequest } from '../services/FirewallService';
 import { cn } from '../lib/utils';
-import { Shield, ChevronRight, Loader2, Plus, Save, X, Trash2 } from 'lucide-react';
+import { Shield, ChevronRight, Loader2, Plus, Save, X, Trash2, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useToast } from '../components/ui/Toast';
 
 const INTERFACE_TYPES = ['wan', 'lan', 'dmz', 'ha', 'mgmt'] as const;
@@ -144,8 +145,29 @@ export default function FirewallPage() {
                 </div>
                 <div className="flex-1 overflow-y-auto">
                     {firewalls.length === 0 ? (
-                        <div className="p-6 text-center text-sm text-slate-400">
-                            Keine Firewalls vorhanden
+                        <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                            <Shield size={36} className="text-slate-300 dark:text-slate-600 mb-3" />
+                            <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">Keine Firewalls vorhanden</h3>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mb-4 max-w-[200px]">
+                                Erstelle zuerst eine Firewall unter Hardware (Typ: FIREWALL), dann dokumentiere hier die Interfaces.
+                            </p>
+                            <div className="space-y-2 text-xs text-left mb-4">
+                                <div className="flex items-start gap-2 text-slate-500 dark:text-slate-400">
+                                    <span className="w-4 h-4 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                                    <span>Hardware → Gerät hinzufügen</span>
+                                </div>
+                                <div className="flex items-start gap-2 text-slate-500 dark:text-slate-400">
+                                    <span className="w-4 h-4 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                                    <span>Typ: <strong>FIREWALL</strong> wählen</span>
+                                </div>
+                                <div className="flex items-start gap-2 text-slate-500 dark:text-slate-400">
+                                    <span className="w-4 h-4 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                                    <span>Hierher zurückkommen</span>
+                                </div>
+                            </div>
+                            <Link to="../hardware" relative="path" className="btn-primary text-xs inline-flex items-center gap-1">
+                                Zu Hardware <ArrowRight size={12} />
+                            </Link>
                         </div>
                     ) : (
                         firewalls.map(fw => (

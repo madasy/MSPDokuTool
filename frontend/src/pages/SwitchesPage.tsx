@@ -175,10 +175,26 @@ export default function SwitchesPage() {
                     {switches.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
                             <Monitor size={36} className="text-slate-300 dark:text-slate-600 mb-3" />
-                            <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-1">Keine Switches vorhanden</h3>
-                            <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Erstelle zuerst einen Switch unter 'Hardware', dann verwalte hier die Ports.</p>
-                            <Link to="../hardware" relative="path" className="btn-primary text-xs">
-                                Zu Hardware
+                            <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">Keine Switches vorhanden</h3>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mb-4 max-w-[200px]">
+                                Erstelle zuerst einen Switch unter Hardware (Typ: SWITCH), dann kannst du hier die Ports verwalten.
+                            </p>
+                            <div className="space-y-2 text-xs text-left mb-4">
+                                <div className="flex items-start gap-2 text-slate-500 dark:text-slate-400">
+                                    <span className="w-4 h-4 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                                    <span>Hardware → Gerät hinzufügen</span>
+                                </div>
+                                <div className="flex items-start gap-2 text-slate-500 dark:text-slate-400">
+                                    <span className="w-4 h-4 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                                    <span>Typ: <strong>SWITCH</strong> wählen</span>
+                                </div>
+                                <div className="flex items-start gap-2 text-slate-500 dark:text-slate-400">
+                                    <span className="w-4 h-4 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                                    <span>Hierher zurückkommen</span>
+                                </div>
+                            </div>
+                            <Link to="../hardware" relative="path" className="btn-primary text-xs inline-flex items-center gap-1">
+                                Zu Hardware →
                             </Link>
                         </div>
                     ) : (
