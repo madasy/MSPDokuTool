@@ -6,6 +6,7 @@ import { cn } from '../../lib/utils';
 import CommandPalette from './CommandPalette';
 import { useState, useRef, useEffect } from 'react';
 import { useFavorites } from '../../hooks/useFavorites';
+import { useAuth } from '../../auth/AuthProvider';
 
 export default function Layout() {
     const location = useLocation();
@@ -125,22 +126,7 @@ export default function Layout() {
 
                 {/* Footer */}
                 <div className="p-4 border-t border-white/10">
-                    <button
-                        onClick={() => {
-                            fetch('/api/logout', {
-                                method: 'POST',
-                                credentials: 'same-origin',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ targetURL: `https://${window.location.host}/.authelia/` })
-                            })
-                                .then(() => { window.location.href = '/.authelia/'; })
-                                .catch(() => { window.location.href = '/.authelia/'; });
-                        }}
-                        className="flex items-center gap-3 w-full px-3 py-2.5 text-xs text-white/50 hover:text-white transition-colors rounded-xl hover:bg-white/5 font-medium cursor-pointer"
-                    >
-                        <LogOut size={16} />
-                        <span>Abmelden</span>
-                    </button>
+                    <LogoutButton />
                 </div>
             </aside>
 
@@ -178,6 +164,19 @@ export default function Layout() {
 }
 
 /* --- Sub-Components --- */
+
+function LogoutButton() {
+    const { logout } = useAuth();
+    return (
+        <button
+            onClick={logout}
+            className="flex items-center gap-3 w-full px-3 py-2.5 text-xs text-white/50 hover:text-white transition-colors rounded-xl hover:bg-white/5 font-medium cursor-pointer"
+        >
+            <LogOut size={16} />
+            <span>Abmelden</span>
+        </button>
+    );
+}
 
 function TenantSwitcher({
     tenants,
@@ -396,16 +395,20 @@ function NavItem({ to, icon, label, end }: { to: string; icon: React.ReactNode; 
 }
 
 function UserProfile() {
-    const { data: user } = useQuery({
+    const { user: oidcUser } = useAuth();
+    const { data: apiUser } = useQuery({
         queryKey: ['auth', 'me'],
         queryFn: () => fetch('/api/v1/auth/me').then(r => r.ok ? r.json() : null),
         staleTime: 60000,
         retry: false,
     });
 
-    const displayName = user?.displayName || user?.username || 'User';
+    // Prefer API user data, fall back to OIDC token claims
+    const oidcProfile = oidcUser?.profile;
+    const displayName = apiUser?.displayName || apiUser?.username
+        || oidcProfile?.name || oidcProfile?.preferred_username || 'User';
     const initials = displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
-    const groups = (user?.groups as string[]) || [];
+    const groups = (apiUser?.groups as string[]) || [];
     const role = groups.includes('admins') ? 'Admin' : groups.includes('technicians') ? 'Techniker' : 'User';
 
     return (
