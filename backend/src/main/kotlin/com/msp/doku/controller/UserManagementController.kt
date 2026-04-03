@@ -1,55 +1,33 @@
 package com.msp.doku.controller
 
-import com.msp.doku.dto.AutheliaUserDto
-import com.msp.doku.dto.CreateAutheliaUserRequest
-import com.msp.doku.service.AutheliaUserService
+import com.msp.doku.dto.*
+import com.msp.doku.service.UserManagementService
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
+import java.util.UUID
 
 @RestController
 @RequestMapping("/api/v1/users")
-class UserManagementController(
-    private val autheliaUserService: AutheliaUserService
-) {
-
+class UserManagementController(private val userManagementService: UserManagementService) {
     @GetMapping
-    fun getAllUsers(): List<AutheliaUserDto> {
-        return autheliaUserService.getAllUsers()
-    }
-
-    @GetMapping("/tenant/{tenantIdentifier}")
-    fun getUsersByTenant(@PathVariable tenantIdentifier: String): List<AutheliaUserDto> {
-        return autheliaUserService.getUsersByTenant(tenantIdentifier)
-    }
+    fun getAllUsers(): List<UserDto> = userManagementService.getAllUsers()
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun createUser(@RequestBody request: CreateAutheliaUserRequest): AutheliaUserDto {
-        return autheliaUserService.createUser(request)
-    }
+    fun createUser(@RequestBody request: CreateUserRequest): UserDto = userManagementService.createUser(request)
 
-    @DeleteMapping("/{username}")
+    @PutMapping("/{id}")
+    fun updateUser(@PathVariable id: UUID, @RequestBody request: UpdateUserRequest): UserDto = userManagementService.updateUser(id, request)
+
+    @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteUser(@PathVariable username: String) {
-        autheliaUserService.deleteUser(username)
-    }
+    fun deactivateUser(@PathVariable id: UUID) = userManagementService.deactivateUser(id)
 
-    @PutMapping("/{username}/password")
+    @PostMapping("/{id}/reset-password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun resetPassword(@PathVariable username: String, @RequestBody body: Map<String, String>) {
-        val newPassword = body["password"] ?: throw IllegalArgumentException("password is required")
-        if (newPassword.length < 8) throw IllegalArgumentException("Password must be at least 8 characters")
-        autheliaUserService.resetPassword(username, newPassword)
-    }
+    fun resetPassword(@PathVariable id: UUID, @RequestBody request: ResetPasswordRequest) = userManagementService.resetPassword(id, request)
 
-    @PostMapping("/{username}/reset-totp")
+    @PostMapping("/{id}/reset-totp")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun resetTotp(@PathVariable username: String) {
-        autheliaUserService.resetTotp(username)
-    }
-
-    @GetMapping("/registration-link")
-    fun getRegistrationLink(): Map<String, String?> {
-        return mapOf("link" to autheliaUserService.getLatestRegistrationLink())
-    }
+    fun resetTotp(@PathVariable id: UUID) = userManagementService.resetTotp(id)
 }

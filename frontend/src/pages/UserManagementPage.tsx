@@ -1,10 +1,22 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { UserPlus, Trash2, Loader2, X, ShieldCheck, User, KeyRound, ShieldOff } from 'lucide-react';
-import { UserService, type AutheliaUser, type CreateUserRequest } from '../services/UserService';
+import { UserPlus, Trash2, Loader2, X, KeyRound, ShieldOff } from 'lucide-react';
+import { UserService, type UserInfo, type CreateUserRequest } from '../services/UserService';
 import { TenantService } from '../services/TenantService';
 import { useToast } from '../components/ui/Toast';
+
+const ROLE_LABELS: Record<string, string> = {
+    ADMIN: 'Admin',
+    TECHNICIAN: 'Techniker',
+    TENANT_USER: 'Kunden-Benutzer',
+};
+
+const ROLE_BADGE_CLASS: Record<string, string> = {
+    ADMIN: 'bg-red-500/10 text-red-400 border border-red-500/20',
+    TECHNICIAN: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
+    TENANT_USER: 'bg-slate-500/10 text-slate-400 border border-slate-500/20',
+};
 
 export default function UserManagementPage() {
     const { tenantId } = useParams<{ tenantId: string }>();
@@ -19,18 +31,16 @@ export default function UserManagementPage() {
     });
 
     const currentTenant = tenants?.find(t => t.id === tenantId);
-    const tenantIdentifier = currentTenant?.identifier ?? '';
 
     const { data: users, isLoading, error } = useQuery({
-        queryKey: ['users', tenantId],
+        queryKey: ['users'],
         queryFn: () => UserService.getAll(),
-        enabled: !!tenantId,
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (username: string) => UserService.delete(username),
+        mutationFn: (id: string) => UserService.delete(id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['users', tenantId] });
+            queryClient.invalidateQueries({ queryKey: ['users'] });
             addToast({ type: 'success', title: 'Benutzer gelöscht' });
         },
         onError: (err: Error) => {
@@ -39,7 +49,7 @@ export default function UserManagementPage() {
     });
 
     const resetTotpMutation = useMutation({
-        mutationFn: (username: string) => UserService.resetTotp(username),
+        mutationFn: (id: string) => UserService.resetTotp(id),
         onSuccess: () => {
             addToast({ type: 'success', title: '2FA zurückgesetzt', message: 'Der Benutzer muss sich beim nächsten Login neu registrieren.' });
         },
@@ -47,15 +57,6 @@ export default function UserManagementPage() {
             addToast({ type: 'error', title: 'Fehler beim 2FA-Reset', message: err.message });
         },
     });
-
-    const isTechnician = (user: AutheliaUser) =>
-        user.groups.includes('technicians') || user.groups.includes('admins');
-
-    const isTenantUser = (user: AutheliaUser) =>
-        user.groups.includes(`tenant:${tenantIdentifier}`);
-
-    const technicians = (users ?? []).filter(isTechnician);
-    const tenantUsers = (users ?? []).filter(u => isTenantUser(u) && !isTechnician(u));
 
     if (isLoading) {
         return (
@@ -87,48 +88,29 @@ export default function UserManagementPage() {
                 <button
                     onClick={() => setIsCreateModalOpen(true)}
                     className="btn-primary"
-                    disabled={!tenantIdentifier}
                 >
                     <UserPlus size={16} className="mr-2" />
                     Neuer Benutzer
                 </button>
             </div>
 
-            {/* Techniker section */}
-            <div className="card mb-6">
-                <div className="flex items-center gap-2 mb-4">
-                    <ShieldCheck size={18} className="text-primary-400" />
-                    <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Techniker</h2>
-                    <span className="badge">{technicians.length}</span>
-                    <span className="ml-auto text-xs text-slate-400">Verwaltet via Authelia-Konfiguration</span>
-                </div>
-                {technicians.length === 0 ? (
-                    <p className="text-xs text-slate-400 py-2">Keine Techniker gefunden.</p>
-                ) : (
-                    <UserTable users={technicians} readOnly />
-                )}
-            </div>
-
-            {/* Kunden-Benutzer section */}
+            {/* Users table */}
             <div className="card">
-                <div className="flex items-center gap-2 mb-4">
-                    <User size={18} className="text-primary-400" />
-                    <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Kunden-Benutzer</h2>
-                    <span className="badge">{tenantUsers.length}</span>
-                </div>
-                {tenantUsers.length === 0 ? (
-                    <p className="text-xs text-slate-400 py-2">Keine Kunden-Benutzer vorhanden. Erstelle den ersten mit "Neuer Benutzer".</p>
+                {(!users || users.length === 0) ? (
+                    <p className="text-xs text-slate-400 py-2">Keine Benutzer vorhanden.</p>
                 ) : (
                     <UserTable
-                        users={tenantUsers}
-                        onDelete={(username) => deleteMutation.mutate(username)}
-                        onResetPassword={(username) => setResetPasswordUser(username)}
-                        onResetTotp={(username) => {
-                            if (confirm(`2FA für "${username}" wirklich zurücksetzen?`)) {
-                                resetTotpMutation.mutate(username);
+                        users={users}
+                        onDelete={(id) => {
+                            if (confirm('Benutzer wirklich löschen?')) deleteMutation.mutate(id);
+                        }}
+                        onResetPassword={(id) => setResetPasswordUser(id)}
+                        onResetTotp={(id) => {
+                            if (confirm('2FA für diesen Benutzer wirklich zurücksetzen?')) {
+                                resetTotpMutation.mutate(id);
                             }
                         }}
-                        deletingUsername={deleteMutation.isPending ? (deleteMutation.variables as string) : undefined}
+                        deletingId={deleteMutation.isPending ? (deleteMutation.variables as string) : undefined}
                     />
                 )}
             </div>
@@ -136,7 +118,7 @@ export default function UserManagementPage() {
             {/* Reset Password Modal */}
             {resetPasswordUser && (
                 <ResetPasswordModal
-                    username={resetPasswordUser}
+                    userId={resetPasswordUser}
                     onClose={() => setResetPasswordUser(null)}
                     onSuccess={() => {
                         setResetPasswordUser(null);
@@ -147,12 +129,13 @@ export default function UserManagementPage() {
             )}
 
             {/* Create Modal */}
-            {isCreateModalOpen && tenantIdentifier && (
+            {isCreateModalOpen && (
                 <CreateUserModal
-                    tenantIdentifier={tenantIdentifier}
+                    tenants={tenants || []}
+                    defaultTenantId={tenantId}
                     onClose={() => setIsCreateModalOpen(false)}
                     onCreated={() => {
-                        queryClient.invalidateQueries({ queryKey: ['users', tenantId] });
+                        queryClient.invalidateQueries({ queryKey: ['users'] });
                         setIsCreateModalOpen(false);
                         addToast({ type: 'success', title: 'Benutzer erstellt' });
                     }}
@@ -167,74 +150,74 @@ export default function UserManagementPage() {
 
 function UserTable({
     users,
-    readOnly = false,
     onDelete,
     onResetPassword,
     onResetTotp,
-    deletingUsername,
+    deletingId,
 }: {
-    users: AutheliaUser[];
-    readOnly?: boolean;
-    onDelete?: (username: string) => void;
-    onResetPassword?: (username: string) => void;
-    onResetTotp?: (username: string) => void;
-    deletingUsername?: string;
+    users: UserInfo[];
+    onDelete?: (id: string) => void;
+    onResetPassword?: (id: string) => void;
+    onResetTotp?: (id: string) => void;
+    deletingId?: string;
 }) {
     return (
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
                 <thead>
                     <tr className="border-b border-slate-200 dark:border-slate-700">
-                        <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Username</th>
-                        <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Name</th>
                         <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 dark:text-slate-400">E-Mail</th>
-                        <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Gruppen</th>
-                        {!readOnly && <th className="py-2 px-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">Aktionen</th>}
+                        <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Anzeigename</th>
+                        <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Rolle</th>
+                        <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Tenant</th>
+                        <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 dark:text-slate-400">2FA</th>
+                        <th className="py-2 px-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">Aktionen</th>
                     </tr>
                 </thead>
                 <tbody>
                     {users.map(user => (
-                        <tr key={user.username} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
-                            <td className="py-2.5 px-3 font-mono text-xs text-slate-700 dark:text-slate-300">{user.username}</td>
-                            <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300">{user.displayname || '—'}</td>
-                            <td className="py-2.5 px-3 text-slate-500 dark:text-slate-400">{user.email || '—'}</td>
+                        <tr key={user.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
+                            <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300">{user.email}</td>
+                            <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300">{user.displayName || '—'}</td>
                             <td className="py-2.5 px-3">
-                                <div className="flex flex-wrap gap-1">
-                                    {user.groups.map(g => (
-                                        <span key={g} className="badge">{g}</span>
-                                    ))}
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${ROLE_BADGE_CLASS[user.role] || ROLE_BADGE_CLASS['TENANT_USER']}`}>
+                                    {ROLE_LABELS[user.role] || user.role}
+                                </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-500 dark:text-slate-400 text-xs">{user.tenantName || '—'}</td>
+                            <td className="py-2.5 px-3">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${user.totpEnabled ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-slate-500/10 text-slate-500 border border-slate-500/20'}`}>
+                                    {user.totpEnabled ? 'Aktiv' : 'Inaktiv'}
+                                </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                    <button
+                                        onClick={() => onResetPassword?.(user.id)}
+                                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                        title="Passwort zurücksetzen"
+                                    >
+                                        <KeyRound size={14} />
+                                    </button>
+                                    <button
+                                        onClick={() => onResetTotp?.(user.id)}
+                                        className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
+                                        title="2FA zurücksetzen"
+                                    >
+                                        <ShieldOff size={14} />
+                                    </button>
+                                    <button
+                                        onClick={() => onDelete?.(user.id)}
+                                        disabled={deletingId === user.id}
+                                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
+                                        title="Benutzer löschen"
+                                    >
+                                        {deletingId === user.id
+                                            ? <Loader2 size={14} className="animate-spin" />
+                                            : <Trash2 size={14} />}
+                                    </button>
                                 </div>
                             </td>
-                            {!readOnly && (
-                                <td className="py-2.5 px-3 text-right">
-                                    <div className="flex items-center justify-end gap-1">
-                                        <button
-                                            onClick={() => onResetPassword?.(user.username)}
-                                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                            title="Passwort zurücksetzen"
-                                        >
-                                            <KeyRound size={14} />
-                                        </button>
-                                        <button
-                                            onClick={() => onResetTotp?.(user.username)}
-                                            className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
-                                            title="2FA zurücksetzen"
-                                        >
-                                            <ShieldOff size={14} />
-                                        </button>
-                                        <button
-                                            onClick={() => onDelete?.(user.username)}
-                                            disabled={deletingUsername === user.username}
-                                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
-                                            title="Benutzer löschen"
-                                        >
-                                            {deletingUsername === user.username
-                                                ? <Loader2 size={14} className="animate-spin" />
-                                                : <Trash2 size={14} />}
-                                        </button>
-                                    </div>
-                                </td>
-                            )}
                         </tr>
                     ))}
                 </tbody>
@@ -246,35 +229,26 @@ function UserTable({
 /* --- CreateUserModal --- */
 
 function CreateUserModal({
-    tenantIdentifier,
+    tenants,
+    defaultTenantId,
     onClose,
     onCreated,
     onError,
 }: {
-    tenantIdentifier: string;
+    tenants: any[];
+    defaultTenantId?: string;
     onClose: () => void;
     onCreated: () => void;
     onError: (msg: string) => void;
 }) {
     const [form, setForm] = useState<CreateUserRequest>({
-        username: '',
-        displayname: '',
         email: '',
+        displayName: '',
         password: '',
-        groups: [`tenant:${tenantIdentifier}`],
+        role: 'TENANT_USER',
+        tenantId: defaultTenantId || '',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const handleEmailChange = (email: string) => {
-        const prefix = email.split('@')[0].toLowerCase().replace(/[^a-z0-9._-]/g, '');
-        setForm(prev => ({
-            ...prev,
-            email,
-            username: prev.username === '' || prev.username === form.email.split('@')[0].toLowerCase().replace(/[^a-z0-9._-]/g, '')
-                ? prefix
-                : prev.username,
-        }));
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -315,22 +289,8 @@ function CreateUserModal({
                             required
                             className="input w-full"
                             value={form.email}
-                            onChange={e => handleEmailChange(e.target.value)}
-                            placeholder="benutzer@kunde.ch"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                            Username <span className="text-red-400">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            required
-                            className="input w-full font-mono"
-                            value={form.username}
-                            onChange={e => setForm(prev => ({ ...prev, username: e.target.value }))}
-                            placeholder="benutzername"
+                            onChange={e => setForm(prev => ({ ...prev, email: e.target.value }))}
+                            placeholder="benutzer@beispiel.ch"
                         />
                     </div>
 
@@ -341,8 +301,8 @@ function CreateUserModal({
                         <input
                             type="text"
                             className="input w-full"
-                            value={form.displayname}
-                            onChange={e => setForm(prev => ({ ...prev, displayname: e.target.value }))}
+                            value={form.displayName || ''}
+                            onChange={e => setForm(prev => ({ ...prev, displayName: e.target.value }))}
                             placeholder="Max Mustermann"
                         />
                     </div>
@@ -364,13 +324,33 @@ function CreateUserModal({
 
                     <div>
                         <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                            Gruppe (automatisch)
+                            Rolle <span className="text-red-400">*</span>
                         </label>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                            {form.groups.map(g => (
-                                <span key={g} className="badge">{g}</span>
+                        <select
+                            className="input w-full"
+                            value={form.role}
+                            onChange={e => setForm(prev => ({ ...prev, role: e.target.value }))}
+                        >
+                            <option value="TENANT_USER">Kunden-Benutzer</option>
+                            <option value="TECHNICIAN">Techniker</option>
+                            <option value="ADMIN">Admin</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                            Tenant (optional)
+                        </label>
+                        <select
+                            className="input w-full"
+                            value={form.tenantId || ''}
+                            onChange={e => setForm(prev => ({ ...prev, tenantId: e.target.value || undefined }))}
+                        >
+                            <option value="">— Kein Tenant —</option>
+                            {tenants.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
                             ))}
-                        </div>
+                        </select>
                     </div>
 
                     <div className="flex justify-end gap-2 pt-2">
@@ -399,12 +379,12 @@ function CreateUserModal({
 /* --- ResetPasswordModal --- */
 
 function ResetPasswordModal({
-    username,
+    userId,
     onClose,
     onSuccess,
     onError,
 }: {
-    username: string;
+    userId: string;
     onClose: () => void;
     onSuccess: () => void;
     onError: (msg: string) => void;
@@ -425,7 +405,7 @@ function ResetPasswordModal({
         }
         setIsSubmitting(true);
         try {
-            await UserService.resetPassword(username, password);
+            await UserService.resetPassword(userId, password);
             onSuccess();
         } catch (err) {
             onError((err as Error).message);
@@ -439,7 +419,7 @@ function ResetPasswordModal({
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm mx-4">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
                     <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        Passwort zurücksetzen: {username}
+                        Passwort zurücksetzen
                     </h2>
                     <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                         <X size={16} className="text-slate-400" />

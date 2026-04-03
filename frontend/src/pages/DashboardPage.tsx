@@ -1,9 +1,10 @@
-import { Server, Users, Network, Database, Clock, ArrowUpRight, Loader2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Server, Users, Network, Database, Clock, ArrowUpRight, Loader2, Building2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { DashboardService } from '../services/DashboardService';
 
 export default function DashboardPage() {
+    const navigate = useNavigate();
     const { data: stats, isLoading: statsLoading } = useQuery({
         queryKey: ['dashboard', 'stats'],
         queryFn: DashboardService.getStats,
@@ -51,6 +52,16 @@ export default function DashboardPage() {
                     </Link>
                 ))}
             </div>
+
+            {/* Empty state when no tenants */}
+            {!statsLoading && (stats?.tenantCount ?? 0) === 0 && (
+                <div className="flex flex-col items-center justify-center py-16 text-center mb-8 card">
+                    <Building2 size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
+                    <h3 className="text-lg font-semibold text-slate-600 dark:text-slate-300 mb-2">Noch keine Tenants vorhanden</h3>
+                    <p className="text-sm text-slate-400 dark:text-slate-500 mb-6 max-w-md">Erstelle deinen ersten Kunden um loszulegen. Alle Geräte, Netzwerke und Dokumentationen werden pro Tenant verwaltet.</p>
+                    <button onClick={() => navigate('/tenants')} className="btn-primary">+ Ersten Tenant erstellen</button>
+                </div>
+            )}
 
             {/* Recent Changes */}
             <div className="card overflow-hidden">

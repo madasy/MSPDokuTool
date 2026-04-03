@@ -1,4 +1,4 @@
-import { LayoutDashboard, Network, Server, Users, LogOut, ChevronRight, Star, Globe, Search, ChevronsUpDown, Check, Building, Menu, X, StarOff, Cpu, Building2, Monitor, FileText, Wifi, Shield, UserPlus } from 'lucide-react';
+import { LayoutDashboard, Network, Server, Users, LogOut, ChevronRight, Star, Globe, Search, ChevronsUpDown, Check, Building, Menu, X, StarOff, Cpu, Building2, Monitor, FileText, Wifi, Shield, UserPlus, Link2, User, Settings, Activity } from 'lucide-react';
 import { NavLink, Outlet, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TenantService } from '../../services/TenantService';
@@ -6,11 +6,14 @@ import { cn } from '../../lib/utils';
 import CommandPalette from './CommandPalette';
 import { useState, useRef, useEffect } from 'react';
 import { useFavorites } from '../../hooks/useFavorites';
+import { useAuth } from '../../auth/AuthProvider';
+import { useFieldLevel } from '../../hooks/useFieldLevel';
 
 export default function Layout() {
     const location = useLocation();
     const params = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     // 1. Determine Tenant Context
     const tenantId = params.tenantId || (location.pathname.startsWith('/tenants/') ? location.pathname.split('/')[2] : null);
@@ -24,6 +27,7 @@ export default function Layout() {
 
     const currentTenant = tenants?.find(t => t.id === tenantId);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const { isModuleVisible } = useFieldLevel(tenantId || undefined);
 
     // 3. Persist selected tenant to localStorage
     useEffect(() => {
@@ -89,29 +93,38 @@ export default function Layout() {
                 {/* Navigation Menu */}
                 <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-4 sidebar-scroll">
 
-                    {/* Global nav — always visible */}
-                    <div className="space-y-1">
-                        <NavItem to="/" icon={<LayoutDashboard size={18} />} label="Dashboard" end />
-                        <NavItem to="/tenants" icon={<Users size={18} />} label="Tenants" />
-                        <NavItem to="/datacenter" icon={<Globe size={18} />} label="Datacenter / IPs" />
-                    </div>
+                    {/* Global nav — hidden for TENANT_USER (they only see their tenant) */}
+                    {user?.role !== 'TENANT_USER' && (
+                        <div className="space-y-1">
+                            <NavItem to="/" icon={<LayoutDashboard size={18} />} label="Dashboard" end />
+                            <NavItem to="/tenants" icon={<Users size={18} />} label="Tenants" />
+                            <NavItem to="/datacenter" icon={<Globe size={18} />} label="Datacenter / IPs" />
+                            {user?.role === 'ADMIN' && (
+                                <NavItem to="/admin/users" icon={<UserPlus size={18} />} label="Benutzer" />
+                            )}
+                        </div>
+                    )}
 
-                    {/* Tenant-scoped nav — only when a tenant is selected */}
-                    {isInTenantContext && (
+                    {/* Tenant-scoped nav — shown when tenant selected, or always for TENANT_USER */}
+                    {(isInTenantContext || user?.role === 'TENANT_USER') && (
                         <div>
-                            <div className="border-t border-white/10 mb-3" />
-                            <SectionHeader label="Kunde" />
+                            {user?.role !== 'TENANT_USER' && <div className="border-t border-white/10 mb-3" />}
+                            <SectionHeader label={user?.role === 'TENANT_USER' ? 'Navigation' : 'Kunde'} />
                             <div className="space-y-1 mt-2">
-                                <NavItem to={`/tenants/${tenantId}`} icon={<LayoutDashboard size={18} />} label="Übersicht" end />
-                                <NavItem to={`/tenants/${tenantId}/sites`} icon={<Building2 size={18} />} label="Standorte" />
-                                <NavItem to={`/tenants/${tenantId}/hardware`} icon={<Cpu size={18} />} label="Hardware" />
-                                <NavItem to={`/tenants/${tenantId}/racks`} icon={<Server size={18} />} label="Racks" />
-                                <NavItem to={`/tenants/${tenantId}/network`} icon={<Network size={18} />} label="IP-Plan" />
-                                <NavItem to={`/tenants/${tenantId}/switches`} icon={<Monitor size={18} />} label="Switches" />
-                                <NavItem to={`/tenants/${tenantId}/firewall`} icon={<Shield size={18} />} label="Firewall" />
-                                <NavItem to={`/tenants/${tenantId}/access-points`} icon={<Wifi size={18} />} label="Access Points" />
-                                <NavItem to={`/tenants/${tenantId}/docs`} icon={<FileText size={18} />} label="Dokumentation" />
-                                <NavItem to={`/tenants/${tenantId}/users`} icon={<UserPlus size={18} />} label="Benutzer" />
+                                <NavItem to={`/tenants/${tenantId || user?.tenantId}`} icon={<LayoutDashboard size={18} />} label="Übersicht" end />
+                                <NavItem to={`/tenants/${tenantId || user?.tenantId}/sites`} icon={<Building2 size={18} />} label="Standorte" />
+                                <NavItem to={`/tenants/${tenantId || user?.tenantId}/hardware`} icon={<Cpu size={18} />} label="Hardware" />
+                                <NavItem to={`/tenants/${tenantId || user?.tenantId}/connections`} icon={<Link2 size={18} />} label="Verbindungen" />
+                                <NavItem to={`/tenants/${tenantId || user?.tenantId}/agents`} icon={<Activity size={18} />} label="Agents" />
+                                {isModuleVisible('racks') && <NavItem to={`/tenants/${tenantId || user?.tenantId}/racks`} icon={<Server size={18} />} label="Racks" />}
+                                <NavItem to={`/tenants/${tenantId || user?.tenantId}/network`} icon={<Network size={18} />} label="IP-Plan" />
+                                {isModuleVisible('switches') && <NavItem to={`/tenants/${tenantId || user?.tenantId}/switches`} icon={<Monitor size={18} />} label="Switches" />}
+                                {isModuleVisible('firewall') && <NavItem to={`/tenants/${tenantId || user?.tenantId}/firewall`} icon={<Shield size={18} />} label="Firewall" />}
+                                {isModuleVisible('access-points') && <NavItem to={`/tenants/${tenantId || user?.tenantId}/access-points`} icon={<Wifi size={18} />} label="Access Points" />}
+                                <NavItem to={`/tenants/${tenantId || user?.tenantId}/docs`} icon={<FileText size={18} />} label="Dokumentation" />
+                                {(user?.role === 'ADMIN' || user?.role === 'TECHNICIAN') && (
+                                    <NavItem to={`/tenants/${tenantId || user?.tenantId}/users`} icon={<UserPlus size={18} />} label="Benutzer" />
+                                )}
                             </div>
                         </div>
                     )}
@@ -123,24 +136,9 @@ export default function Layout() {
 
                 </nav>
 
-                {/* Footer */}
+                {/* Footer — version info */}
                 <div className="p-4 border-t border-white/10">
-                    <button
-                        onClick={() => {
-                            fetch('/api/logout', {
-                                method: 'POST',
-                                credentials: 'same-origin',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ targetURL: `https://${window.location.host}/.authelia/` })
-                            })
-                                .then(() => { window.location.href = '/.authelia/'; })
-                                .catch(() => { window.location.href = '/.authelia/'; });
-                        }}
-                        className="flex items-center gap-3 w-full px-3 py-2.5 text-xs text-white/50 hover:text-white transition-colors rounded-xl hover:bg-white/5 font-medium cursor-pointer"
-                    >
-                        <LogOut size={16} />
-                        <span>Abmelden</span>
-                    </button>
+                    <p className="text-[10px] text-white/20 text-center">MSP DokuTool v0.1</p>
                 </div>
             </aside>
 
@@ -162,7 +160,7 @@ export default function Layout() {
 
                     {/* Right: User Profile */}
                     <div className="flex items-center">
-                        <UserProfile />
+                        <UserProfileMenu />
                     </div>
                 </header>
 
@@ -178,6 +176,7 @@ export default function Layout() {
 }
 
 /* --- Sub-Components --- */
+
 
 function TenantSwitcher({
     tenants,
@@ -395,28 +394,72 @@ function NavItem({ to, icon, label, end }: { to: string; icon: React.ReactNode; 
     );
 }
 
-function UserProfile() {
-    const { data: user } = useQuery({
-        queryKey: ['auth', 'me'],
-        queryFn: () => fetch('/api/v1/auth/me').then(r => r.ok ? r.json() : null),
-        staleTime: 60000,
-        retry: false,
-    });
+function UserProfileMenu() {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    const [open, setOpen] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
 
-    const displayName = user?.displayName || user?.username || 'User';
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, []);
+
+    const displayName = user?.displayName || user?.email || 'User';
     const initials = displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
-    const groups = (user?.groups as string[]) || [];
-    const role = groups.includes('admins') ? 'Admin' : groups.includes('technicians') ? 'Techniker' : 'User';
+    const roleLabel = user?.role === 'ADMIN' ? 'Admin' : user?.role === 'TECHNICIAN' ? 'Techniker' : 'Benutzer';
 
     return (
-        <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-800 p-1.5 pr-4 rounded-full transition-colors border border-transparent hover:border-slate-200/50 dark:hover:border-slate-700">
-            <div className="h-9 w-9 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 flex items-center justify-center text-xs font-bold border border-primary-200 dark:border-primary-800">
-                {initials}
-            </div>
-            <div className="hidden md:block text-xs text-left">
-                <p className="font-semibold text-slate-700 dark:text-slate-200">{displayName}</p>
-                <p className="text-slate-400 font-medium text-[10px]">{role}</p>
-            </div>
+        <div className="relative" ref={containerRef}>
+            <button
+                onClick={() => setOpen(!open)}
+                className="flex items-center gap-3 cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-800 p-1.5 pr-4 rounded-full transition-colors border border-transparent hover:border-slate-200/50 dark:hover:border-slate-700"
+            >
+                <div className="h-9 w-9 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 flex items-center justify-center text-xs font-bold border border-primary-200 dark:border-primary-800">
+                    {initials}
+                </div>
+                <div className="hidden md:block text-xs text-left">
+                    <p className="font-semibold text-slate-700 dark:text-slate-200">{displayName}</p>
+                    <p className="text-slate-400 font-medium text-[10px]">{roleLabel}{!user?.totpEnabled && user?.totpRequired ? ' · ⚠ 2FA fehlt' : ''}</p>
+                </div>
+            </button>
+
+            {open && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1 z-50">
+                    <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700">
+                        <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{displayName}</p>
+                        <p className="text-[11px] text-slate-400">{user?.email}</p>
+                    </div>
+                    <button
+                        onClick={() => { navigate('/profile'); setOpen(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors text-left"
+                    >
+                        <User size={15} className="text-slate-400" />
+                        Profil & 2FA
+                    </button>
+                    {user?.role === 'ADMIN' && (
+                        <button
+                            onClick={() => { navigate('/settings'); setOpen(false); }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors text-left"
+                        >
+                            <Settings size={15} className="text-slate-400" />
+                            Einstellungen
+                        </button>
+                    )}
+                    <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">
+                        <button
+                            onClick={() => { logout(); setOpen(false); }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
+                        >
+                            <LogOut size={15} />
+                            Abmelden
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

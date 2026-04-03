@@ -182,6 +182,7 @@ export default function RackListPage() {
     const [selectedDevice, setSelectedDevice] = useState<RackDevice | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [placementU, setPlacementU] = useState<string>('');
+    const [selectedRackId, setSelectedRackId] = useState<string | null>(null);
 
     // Track whether the selected device is unplaced (from left panel)
     const [selectedIsUnplaced, setSelectedIsUnplaced] = useState(false);
@@ -233,7 +234,8 @@ export default function RackListPage() {
         enabled: !!tenantId,
     });
 
-    const firstRack = racks?.[0];
+    const activeRackId = selectedRackId ?? racks?.[0]?.id ?? null;
+    const activeRack = racks?.find(r => r.id === activeRackId) ?? null;
 
     if (racksLoading) {
         return (
@@ -243,21 +245,63 @@ export default function RackListPage() {
         );
     }
 
+    // Check if sites exist for the guided flow
+    const { data: sites } = useQuery({
+        queryKey: ['sites', tenantId],
+        queryFn: () => SiteService.getByTenant(tenantId!),
+        enabled: !!tenantId && (!racks || racks.length === 0),
+    });
+
+    const hasSites = sites && sites.length > 0;
+
     if (!racks || racks.length === 0) {
         return (
             <>
                 <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                        <Box size={48} className="text-slate-300 mx-auto mb-4" />
-                        <p className="text-lg font-semibold text-slate-600">Keine Racks vorhanden</p>
-                        <p className="text-sm text-slate-400 mt-1 mb-5">Erstelle zunächst einen Standort, Raum und Rack.</p>
-                        <button
-                            onClick={() => setShowCreateModal(true)}
-                            className="btn btn-primary"
-                        >
-                            <Plus size={14} />
-                            Rack erstellen
-                        </button>
+                    <div className="text-center max-w-md">
+                        <Box size={48} className="text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-slate-600 dark:text-slate-300 mb-2">Keine Racks vorhanden</h3>
+
+                        {!hasSites ? (
+                            <>
+                                <p className="text-sm text-slate-400 mb-6">
+                                    Um ein Rack zu erstellen, benötigst du zuerst einen Standort mit einem Raum.
+                                </p>
+                                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 text-left mb-6 border border-slate-200 dark:border-slate-700">
+                                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">Schritte:</p>
+                                    <ol className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                                        <li className="flex items-start gap-2">
+                                            <span className="w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                                            <span>Gehe zu <strong>Standorte</strong> und erstelle einen Standort</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                                            <span>Füge einen Raum zum Standort hinzu (z.B. "Serverraum")</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                                            <span>Komme hierher zurück und erstelle ein Rack</span>
+                                        </li>
+                                    </ol>
+                                </div>
+                                <a href={`/tenants/${tenantId}/sites`} className="btn-primary inline-flex items-center gap-2">
+                                    Standort erstellen
+                                </a>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-sm text-slate-400 mb-6">
+                                    Erstelle ein Rack in einem deiner Standorte und Räume.
+                                </p>
+                                <button
+                                    onClick={() => setShowCreateModal(true)}
+                                    className="btn-primary inline-flex items-center gap-2"
+                                >
+                                    <Plus size={14} />
+                                    Neues Rack erstellen
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
                 {showCreateModal && tenantId && (
@@ -322,11 +366,27 @@ export default function RackListPage() {
 
                 {/* Center: Rack Visualization */}
                 <div className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-900">
-                    {/* Rack area header with "Neues Rack" button */}
+                    {/* Rack area header with selector and "Neues Rack" button */}
                     <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                            {racks.length} {racks.length === 1 ? 'Rack' : 'Racks'}
-                        </p>
+                        <div className="flex items-center gap-3">
+                            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                {racks.length} {racks.length === 1 ? 'Rack' : 'Racks'}
+                            </p>
+                            {racks.length > 1 && (
+                                <select
+                                    value={activeRackId ?? ''}
+                                    onChange={e => setSelectedRackId(e.target.value)}
+                                    className="input text-sm py-1 pr-8"
+                                >
+                                    {racks.map(rack => (
+                                        <option key={rack.id} value={rack.id}>{rack.name}</option>
+                                    ))}
+                                </select>
+                            )}
+                            {racks.length === 1 && activeRack && (
+                                <span className="text-sm text-slate-500 dark:text-slate-400">{activeRack.name}</span>
+                            )}
+                        </div>
                         <button
                             onClick={() => setShowCreateModal(true)}
                             className="btn btn-primary btn-sm"
@@ -336,13 +396,13 @@ export default function RackListPage() {
                         </button>
                     </div>
                     <div className="flex-1 flex items-start justify-center overflow-auto p-6">
-                        {firstRack && (
+                        {activeRack && (
                             <RackVisualization
                                 rack={{
-                                    id: firstRack.id,
-                                    name: firstRack.name,
-                                    heightUnits: firstRack.heightUnits,
-                                    devices: firstRack.devices.map(d => ({
+                                    id: activeRack.id,
+                                    name: activeRack.name,
+                                    heightUnits: activeRack.heightUnits,
+                                    devices: activeRack.devices.map(d => ({
                                         id: d.id,
                                         name: d.name,
                                         deviceType: d.deviceType,
@@ -352,7 +412,7 @@ export default function RackListPage() {
                                     })),
                                 }}
                                 onDeviceClick={(device) => {
-                                    const full = firstRack.devices.find(d => d.id === device.id);
+                                    const full = activeRack.devices.find(d => d.id === device.id);
                                     if (full) {
                                         setSelectedDevice(full);
                                         setSelectedIsUnplaced(false);
@@ -392,10 +452,10 @@ export default function RackListPage() {
                                 </DetailSection>
 
                                 {/* Placement UI for unplaced devices */}
-                                {selectedIsUnplaced && firstRack && (
+                                {selectedIsUnplaced && activeRack && (
                                     <DetailSection title="Im Rack platzieren">
                                         <p className="text-[11px] text-slate-500 mb-2">
-                                            In "{firstRack.name}" platzieren:
+                                            In "{activeRack.name}" platzieren:
                                         </p>
                                         <div className="flex items-center gap-2">
                                             <label className="text-xs text-slate-500 whitespace-nowrap">Position U:</label>
@@ -405,7 +465,7 @@ export default function RackListPage() {
                                                 onChange={e => setPlacementU(e.target.value)}
                                                 className="input text-xs py-1 w-16"
                                                 min={1}
-                                                max={firstRack.heightUnits}
+                                                max={activeRack.heightUnits}
                                                 placeholder="U"
                                             />
                                             <button
@@ -414,7 +474,7 @@ export default function RackListPage() {
                                                     if (u && selectedDevice) {
                                                         placeMutation.mutate({
                                                             deviceId: selectedDevice.id,
-                                                            rackId: firstRack.id,
+                                                            rackId: activeRack.id,
                                                             positionU: u,
                                                         });
                                                     }

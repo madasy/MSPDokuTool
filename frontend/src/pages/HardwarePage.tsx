@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Cpu, Monitor, Shield, Wifi, Box, Plus, Search, Edit2, Trash2, X, Check, Server, Loader2 } from 'lucide-react';
-import { cn } from '../lib/utils';
 import { useToast } from '../components/ui/Toast';
 import { DeviceService, type Device, type CreateDeviceRequest } from '../services/DeviceService';
 import { SiteService } from '../services/SiteService';
+import { FieldGroup, AdvancedToggle } from '../components/ui/FieldGroup';
+import { useFieldLevel } from '../hooks/useFieldLevel';
+import InlineEdit from '../components/ui/InlineEdit';
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
     SERVER: <Cpu size={14} />,
@@ -158,15 +160,25 @@ export default function HardwarePage() {
                                     device={device}
                                     onEdit={() => setEditingId(device.id)}
                                     onDelete={() => deleteMutation.mutate(device.id)}
+                                    onUpdate={(data) => updateMutation.mutate({ id: device.id, data })}
                                 />
                             )
                         ))}
                     </tbody>
                 </table>
                 {filtered.length === 0 && (
-                    <div className="text-center py-12 text-sm text-slate-400">
-                        Keine Geräte gefunden
-                    </div>
+                    devices.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                            <Cpu size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
+                            <h3 className="text-lg font-semibold text-slate-600 dark:text-slate-300 mb-2">Keine Geräte vorhanden</h3>
+                            <p className="text-sm text-slate-400 dark:text-slate-500 mb-6 max-w-md">Erstelle zunächst einen Standort unter 'Standorte', dann füge hier Geräte hinzu.</p>
+                            <button onClick={() => setShowAddModal(true)} className="btn-primary">+ Gerät hinzufügen</button>
+                        </div>
+                    ) : (
+                        <div className="text-center py-12 text-sm text-slate-400">
+                            Keine Geräte gefunden
+                        </div>
+                    )
                 )}
             </div>
 
@@ -185,30 +197,50 @@ export default function HardwarePage() {
     );
 }
 
-function DeviceRow({ device, onEdit, onDelete }: { device: Device; onEdit: () => void; onDelete: () => void }) {
+const DEVICE_STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }));
+
+function DeviceRow({ device, onEdit, onDelete, onUpdate }: {
+    device: Device;
+    onEdit: () => void;
+    onDelete: () => void;
+    onUpdate: (data: Partial<CreateDeviceRequest>) => void;
+}) {
     return (
         <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50 group">
             <td className="table-cell">
                 <span className="text-slate-400">{TYPE_ICONS[device.deviceType] || <Box size={14} />}</span>
             </td>
-            <td className="table-cell font-medium text-slate-800 dark:text-white">{device.name}</td>
+            <td className="table-cell font-medium text-slate-800 dark:text-white">
+                <InlineEdit
+                    value={device.name}
+                    placeholder="Name..."
+                    onSave={(v) => onUpdate({ name: v })}
+                />
+            </td>
             <td className="table-cell text-xs text-slate-500 dark:text-slate-400">{TYPE_LABELS[device.deviceType] || device.deviceType}</td>
             <td className="table-cell text-xs text-slate-600 dark:text-slate-300">{device.model || '–'}</td>
             <td className="table-cell font-mono text-xs text-slate-500">{device.serial || '–'}</td>
-            <td className="table-cell font-mono text-xs text-slate-700 dark:text-slate-300">{device.ip || '–'}</td>
+            <td className="table-cell font-mono text-xs text-slate-700 dark:text-slate-300">
+                <InlineEdit
+                    value={device.ip || ''}
+                    placeholder="–"
+                    onSave={(v) => onUpdate({ ip: v || undefined })}
+                    className="font-mono"
+                />
+            </td>
             <td className="table-cell font-mono text-xs text-slate-500">{device.mac || '–'}</td>
             <td className="table-cell">
-                <span className={cn('badge text-[10px]',
-                    device.status === 'ACTIVE' && 'badge-ok',
-                    device.status === 'PLANNED' && 'badge-planned',
-                    device.status === 'STORAGE' && 'badge-warning',
-                    device.status === 'RETIRED' && 'badge-error',
-                )}>{STATUS_LABELS[device.status]}</span>
+                <InlineEdit
+                    type="select"
+                    value={device.status}
+                    options={DEVICE_STATUS_OPTIONS}
+                    onSave={(v) => onUpdate({ status: v as Device['status'] })}
+                />
             </td>
             <td className="table-cell text-xs text-slate-500">{device.rackName || '–'}</td>
             <td className="table-cell">
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={onEdit} className="p-1 text-slate-400 hover:text-primary-500" title="Bearbeiten">
+                    <button onClick={onEdit} className="p-1 text-slate-400 hover:text-primary-500" title="Alle Felder bearbeiten">
                         <Edit2 size={14} />
                     </button>
                     <button onClick={onDelete} className="p-1 text-slate-400 hover:text-red-500" title="Löschen">
@@ -261,6 +293,7 @@ function EditableRow({ device, onSave, onCancel }: { device: Device; onSave: (id
 
 function AddDeviceModal({ tenantId, onClose, onSuccess }: { tenantId: string; onClose: () => void; onSuccess: () => void }) {
     const { addToast } = useToast();
+    const { showAdvanced, toggleAdvanced } = useFieldLevel(tenantId);
     const [name, setName] = useState('');
     const [deviceType, setDeviceType] = useState('SERVER');
     const [model, setModel] = useState('');
@@ -357,22 +390,6 @@ function AddDeviceModal({ tenantId, onClose, onSuccess }: { tenantId: string; on
                             <input value={model} onChange={e => setModel(e.target.value)} className="input" placeholder="z.B. HP Aruba 2930F" />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Seriennummer</label>
-                            <input value={serial} onChange={e => setSerial(e.target.value)} className="input font-mono" placeholder="z.B. SW-2024-0001" />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">IP-Adresse</label>
-                            <input value={ip} onChange={e => setIp(e.target.value)} className="input font-mono" placeholder="z.B. 10.0.0.1" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">MAC-Adresse</label>
-                            <input value={mac} onChange={e => setMac(e.target.value)} className="input font-mono" placeholder="z.B. AA:BB:CC:11:22:33" />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
                             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Status</label>
                             <select value={status} onChange={e => setStatus(e.target.value as Device['status'])} className="input">
                                 {Object.entries(STATUS_LABELS).map(([key, label]) => (
@@ -380,26 +397,45 @@ function AddDeviceModal({ tenantId, onClose, onSuccess }: { tenantId: string; on
                                 ))}
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Höheneinheiten (HE)</label>
-                            <input type="number" value={heightU} onChange={e => setHeightU(parseInt(e.target.value) || 1)} className="input" min={1} max={48} />
-                        </div>
                     </div>
-                    {showPortFields && (
-                        <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
-                            <div className="col-span-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                                Port-Konfiguration
+                    <FieldGroup level="advanced" show={showAdvanced}>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Seriennummer</label>
+                                <input value={serial} onChange={e => setSerial(e.target.value)} className="input font-mono" placeholder="z.B. SW-2024-0001" />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">RJ45 Ports</label>
-                                <input type="number" value={rj45Ports} onChange={e => setRj45Ports(parseInt(e.target.value) || 0)} className="input" min={0} max={96} placeholder="z.B. 48" />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">SFP Ports</label>
-                                <input type="number" value={sfpPorts} onChange={e => setSfpPorts(parseInt(e.target.value) || 0)} className="input" min={0} max={32} placeholder="z.B. 4" />
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">MAC-Adresse</label>
+                                <input value={mac} onChange={e => setMac(e.target.value)} className="input font-mono" placeholder="z.B. AA:BB:CC:11:22:33" />
                             </div>
                         </div>
-                    )}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">IP-Adresse</label>
+                                <input value={ip} onChange={e => setIp(e.target.value)} className="input font-mono" placeholder="z.B. 10.0.0.1" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Höheneinheiten (HE)</label>
+                                <input type="number" value={heightU} onChange={e => setHeightU(parseInt(e.target.value) || 1)} className="input" min={1} max={48} />
+                            </div>
+                        </div>
+                        {showPortFields && (
+                            <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
+                                <div className="col-span-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                                    Port-Konfiguration
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">RJ45 Ports</label>
+                                    <input type="number" value={rj45Ports} onChange={e => setRj45Ports(parseInt(e.target.value) || 0)} className="input" min={0} max={96} placeholder="z.B. 48" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">SFP Ports</label>
+                                    <input type="number" value={sfpPorts} onChange={e => setSfpPorts(parseInt(e.target.value) || 0)} className="input" min={0} max={32} placeholder="z.B. 4" />
+                                </div>
+                            </div>
+                        )}
+                    </FieldGroup>
+                    <AdvancedToggle show={showAdvanced} onToggle={toggleAdvanced} />
                     <div className="flex justify-end gap-3 pt-2">
                         <button type="button" onClick={onClose} className="btn-secondary text-xs">Abbrechen</button>
                         <button type="submit" disabled={createMutation.isPending || !siteId} className="btn-primary text-xs">

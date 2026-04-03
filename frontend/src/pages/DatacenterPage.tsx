@@ -119,8 +119,13 @@ export default function DatacenterPage() {
                             <ChevronRight size={14} className="text-slate-300" />
                         </button>
                     )) : (
-                        <div className="p-6 text-center text-sm text-slate-400">
-                            Keine IP Ranges vorhanden
+                        <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                            <Globe size={36} className="text-slate-300 dark:text-slate-600 mb-3" />
+                            <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-1">Keine IP Ranges vorhanden</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Erstelle die erste öffentliche IP Range um Adressen zu verwalten.</p>
+                            <button onClick={() => setShowCreateModal(true)} className="btn-primary text-xs">
+                                + IP Range erstellen
+                            </button>
                         </div>
                     )}
                 </div>
@@ -227,8 +232,15 @@ export default function DatacenterPage() {
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
-                        Wähle eine IP Range aus oder erstelle eine neue
+                    <div className="flex-1 flex flex-col items-center justify-center text-center px-8 gap-4">
+                        <Globe size={48} className="text-slate-300 dark:text-slate-600" />
+                        <div>
+                            <h3 className="text-lg font-semibold text-slate-600 dark:text-slate-300 mb-2">Kein IP-Block ausgewählt</h3>
+                            <p className="text-sm text-slate-400 dark:text-slate-500 max-w-sm">Wähle eine IP Range aus der Liste oder erstelle einen neuen Block zur Verwaltung öffentlicher IP-Adressen.</p>
+                        </div>
+                        <button onClick={() => setShowCreateModal(true)} className="btn-primary">
+                            + IP Range erstellen
+                        </button>
                     </div>
                 )}
             </div>

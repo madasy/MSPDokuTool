@@ -16,6 +16,8 @@ interface TenantRepository : JpaRepository<Tenant, UUID> {
 interface UserRepository : JpaRepository<User, UUID> {
     fun findByEmail(email: String): User?
     fun findByExternalId(externalId: String): User?
+    fun findByTenantId(tenantId: UUID): List<User>
+    fun findByIsActiveTrue(): List<User>
 }
 
 @Repository

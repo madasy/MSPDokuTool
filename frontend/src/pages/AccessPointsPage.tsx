@@ -184,8 +184,19 @@ export default function AccessPointsPage() {
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
                             {filtered.length === 0 ? (
                                 <tr>
-                                    <td colSpan={11} className="px-4 py-10 text-center text-slate-400 text-sm">
-                                        {search ? 'Keine Treffer.' : 'Noch keine Access Points vorhanden.'}
+                                    <td colSpan={11} className="px-4 py-12 text-center">
+                                        {search ? (
+                                            <span className="text-sm text-slate-400">Keine Treffer für "{search}".</span>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center gap-3">
+                                                <Wifi size={40} className="text-slate-300 dark:text-slate-600" />
+                                                <div>
+                                                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-1">Keine Access Points vorhanden</p>
+                                                    <p className="text-xs text-slate-400 dark:text-slate-500 max-w-sm">Dokumentiere WLAN-Infrastruktur mit Standort, Kanal und SSIDs.</p>
+                                                </div>
+                                                <button onClick={() => setShowModal(true)} className="btn-primary text-xs">+ Access Point hinzufügen</button>
+                                            </div>
+                                        )}
                                     </td>
                                 </tr>
                             ) : filtered.map((ap: AccessPoint) => (

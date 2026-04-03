@@ -30,4 +30,5 @@ export const RackService = {
             method: 'POST',
             body: JSON.stringify(data),
         }),
+    delete: (id: string) => apiFetch<void>(`/racks/${id}`, { method: 'DELETE' }),
 };

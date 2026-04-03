@@ -2,12 +2,15 @@ package com.msp.doku.controller
 
 import com.msp.doku.dto.CreateTenantRequest
 import com.msp.doku.dto.TenantDto
+import com.msp.doku.dto.UpdateTenantRequest
+import com.msp.doku.dto.TenantHealthDto
 import com.msp.doku.dto.TenantSummaryDto
 import com.msp.doku.service.TenantService
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -31,8 +34,18 @@ class TenantController(
         return tenantService.createTenant(request)
     }
 
+    @PutMapping("/{id}")
+    fun updateTenant(@PathVariable id: UUID, @RequestBody request: UpdateTenantRequest): TenantDto {
+        return tenantService.updateTenant(id, request)
+    }
+
     @GetMapping("/{id}/summary")
     fun getTenantSummary(@PathVariable id: UUID): TenantSummaryDto {
         return tenantService.getSummary(id)
+    }
+
+    @GetMapping("/{id}/health")
+    fun getTenantHealth(@PathVariable id: UUID): TenantHealthDto {
+        return tenantService.getHealth(id)
     }
 }

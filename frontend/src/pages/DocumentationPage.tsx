@@ -153,7 +153,9 @@ export default function DocumentationPage() {
                                     </div>
                                     <div className="flex items-center justify-between mt-1">
                                         <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                                            {info?.updatedAt ? formatDate(info.updatedAt) : 'Noch nicht erfasst'}
+                                            {info?.updatedAt ? formatDate(info.updatedAt) : (
+                                                <span className="text-amber-500 dark:text-amber-400">0% ausgefüllt — klicke zum Starten</span>
+                                            )}
                                         </span>
                                         <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
                                             {pct}%
