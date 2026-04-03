@@ -4,7 +4,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
 export default function LoginPage() {
-    const { isAuthenticated, isLoading, setupRequired, login, verifyTotp, pendingToken } = useAuth();
+    const { isAuthenticated, isLoading, setupRequired, login, verifyTotp } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [totpCode, setTotpCode] = useState('');
