@@ -2,7 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import {
     Server, Network, ArrowRight, Loader2, Building2, Cpu, Monitor,
     Wifi, FileText, Shield, AlertTriangle, CheckCircle, Info, MapPin,
-    HardDrive, Layers, Rocket,
+    HardDrive, Rocket,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { TenantService, type Tenant, type CategoryScore, type ActionItem } from '../services/TenantService';

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, ChevronLeft, ChevronRight, SkipForward, Loader2, MapPin, Building, Plus, Trash2 } from 'lucide-react';
 import { TenantService } from '../services/TenantService';
 import { SiteService, RoomService, type CreateSiteRequest, type CreateRoomRequest } from '../services/SiteService';
@@ -25,7 +25,7 @@ const STEPS: WizardStep[] = [
 
 // ─── Step indicator ──────────────────────────────────────────────────────────
 
-function StepIndicator({ current, total }: { current: number; total: number }) {
+function StepIndicator({ current }: { current: number; total: number }) {
     return (
         <div className="flex items-center justify-center gap-0 px-4">
             {STEPS.map((step, idx) => {
@@ -121,7 +121,6 @@ function Step2Sites({ tenantId, onComplete }: { tenantId: string; onComplete: ()
     const [sites, setSites] = useState<SiteDraft[]>([
         { name: '', address: '', city: '', country: 'CH', rooms: [{ name: '', floor: '', description: '' }] },
     ]);
-    const [saving, setSaving] = useState(false);
     const [error, setError]   = useState<string | null>(null);
 
     function addSite() {
@@ -163,7 +162,6 @@ function Step2Sites({ tenantId, onComplete }: { tenantId: string; onComplete: ()
             return;
         }
 
-        setSaving(true);
         setError(null);
         try {
             for (const site of toSave) {
@@ -189,8 +187,6 @@ function Step2Sites({ tenantId, onComplete }: { tenantId: string; onComplete: ()
             onComplete();
         } catch (e: any) {
             setError(e.message ?? 'Fehler beim Speichern');
-        } finally {
-            setSaving(false);
         }
     }
 
@@ -403,7 +399,7 @@ export default function OnboardingWizardPage() {
     const { tenantId } = useParams<{ tenantId: string }>();
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
-    const [step2Pending, setStep2Pending] = useState(false);
+    const [step2Pending] = useState(false);
 
     const tid = tenantId!;
 
