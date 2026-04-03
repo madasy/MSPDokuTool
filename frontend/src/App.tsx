@@ -25,6 +25,7 @@ import FirewallPage from './pages/FirewallPage';
 import UserManagementPage from './pages/UserManagementPage';
 import OnboardingWizardPage from './pages/OnboardingWizardPage';
 import ConnectionsPage from './pages/ConnectionsPage';
+import AgentPage from './pages/AgentPage';
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ function AppRoutes() {
         <Route path="tenants/:tenantId/users" element={<ErrorBoundary><UserManagementPage /></ErrorBoundary>} />
         <Route path="tenants/:tenantId/wizard" element={<ErrorBoundary><OnboardingWizardPage /></ErrorBoundary>} />
         <Route path="tenants/:tenantId/connections" element={<ErrorBoundary><ConnectionsPage /></ErrorBoundary>} />
+        <Route path="tenants/:tenantId/agents" element={<ErrorBoundary><AgentPage /></ErrorBoundary>} />
         <Route path="admin/users" element={<ErrorBoundary><UserManagementPage /></ErrorBoundary>} />
         <Route path="profile" element={<ErrorBoundary><ProfilePage /></ErrorBoundary>} />
         <Route path="settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
