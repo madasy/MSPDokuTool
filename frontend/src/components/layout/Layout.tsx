@@ -93,33 +93,37 @@ export default function Layout() {
                 {/* Navigation Menu */}
                 <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-4 sidebar-scroll">
 
-                    {/* Global nav — always visible */}
-                    <div className="space-y-1">
-                        <NavItem to="/" icon={<LayoutDashboard size={18} />} label="Dashboard" end />
-                        <NavItem to="/tenants" icon={<Users size={18} />} label="Tenants" />
-                        <NavItem to="/datacenter" icon={<Globe size={18} />} label="Datacenter / IPs" />
-                        {user?.role === 'ADMIN' && (
-                            <NavItem to="/admin/users" icon={<UserPlus size={18} />} label="Benutzer" />
-                        )}
-                    </div>
+                    {/* Global nav — hidden for TENANT_USER (they only see their tenant) */}
+                    {user?.role !== 'TENANT_USER' && (
+                        <div className="space-y-1">
+                            <NavItem to="/" icon={<LayoutDashboard size={18} />} label="Dashboard" end />
+                            <NavItem to="/tenants" icon={<Users size={18} />} label="Tenants" />
+                            <NavItem to="/datacenter" icon={<Globe size={18} />} label="Datacenter / IPs" />
+                            {user?.role === 'ADMIN' && (
+                                <NavItem to="/admin/users" icon={<UserPlus size={18} />} label="Benutzer" />
+                            )}
+                        </div>
+                    )}
 
-                    {/* Tenant-scoped nav — only when a tenant is selected */}
-                    {isInTenantContext && (
+                    {/* Tenant-scoped nav — shown when tenant selected, or always for TENANT_USER */}
+                    {(isInTenantContext || user?.role === 'TENANT_USER') && (
                         <div>
-                            <div className="border-t border-white/10 mb-3" />
-                            <SectionHeader label="Kunde" />
+                            {user?.role !== 'TENANT_USER' && <div className="border-t border-white/10 mb-3" />}
+                            <SectionHeader label={user?.role === 'TENANT_USER' ? 'Navigation' : 'Kunde'} />
                             <div className="space-y-1 mt-2">
-                                <NavItem to={`/tenants/${tenantId}`} icon={<LayoutDashboard size={18} />} label="Übersicht" end />
-                                <NavItem to={`/tenants/${tenantId}/sites`} icon={<Building2 size={18} />} label="Standorte" />
-                                <NavItem to={`/tenants/${tenantId}/hardware`} icon={<Cpu size={18} />} label="Hardware" />
-                                <NavItem to={`/tenants/${tenantId}/connections`} icon={<Link2 size={18} />} label="Verbindungen" />
-                                {isModuleVisible('racks') && <NavItem to={`/tenants/${tenantId}/racks`} icon={<Server size={18} />} label="Racks" />}
-                                <NavItem to={`/tenants/${tenantId}/network`} icon={<Network size={18} />} label="IP-Plan" />
-                                {isModuleVisible('switches') && <NavItem to={`/tenants/${tenantId}/switches`} icon={<Monitor size={18} />} label="Switches" />}
-                                {isModuleVisible('firewall') && <NavItem to={`/tenants/${tenantId}/firewall`} icon={<Shield size={18} />} label="Firewall" />}
-                                {isModuleVisible('access-points') && <NavItem to={`/tenants/${tenantId}/access-points`} icon={<Wifi size={18} />} label="Access Points" />}
-                                <NavItem to={`/tenants/${tenantId}/docs`} icon={<FileText size={18} />} label="Dokumentation" />
-                                <NavItem to={`/tenants/${tenantId}/users`} icon={<UserPlus size={18} />} label="Benutzer" />
+                                <NavItem to={`/tenants/${tenantId || user?.tenantId}`} icon={<LayoutDashboard size={18} />} label="Übersicht" end />
+                                <NavItem to={`/tenants/${tenantId || user?.tenantId}/sites`} icon={<Building2 size={18} />} label="Standorte" />
+                                <NavItem to={`/tenants/${tenantId || user?.tenantId}/hardware`} icon={<Cpu size={18} />} label="Hardware" />
+                                <NavItem to={`/tenants/${tenantId || user?.tenantId}/connections`} icon={<Link2 size={18} />} label="Verbindungen" />
+                                {isModuleVisible('racks') && <NavItem to={`/tenants/${tenantId || user?.tenantId}/racks`} icon={<Server size={18} />} label="Racks" />}
+                                <NavItem to={`/tenants/${tenantId || user?.tenantId}/network`} icon={<Network size={18} />} label="IP-Plan" />
+                                {isModuleVisible('switches') && <NavItem to={`/tenants/${tenantId || user?.tenantId}/switches`} icon={<Monitor size={18} />} label="Switches" />}
+                                {isModuleVisible('firewall') && <NavItem to={`/tenants/${tenantId || user?.tenantId}/firewall`} icon={<Shield size={18} />} label="Firewall" />}
+                                {isModuleVisible('access-points') && <NavItem to={`/tenants/${tenantId || user?.tenantId}/access-points`} icon={<Wifi size={18} />} label="Access Points" />}
+                                <NavItem to={`/tenants/${tenantId || user?.tenantId}/docs`} icon={<FileText size={18} />} label="Dokumentation" />
+                                {(user?.role === 'ADMIN' || user?.role === 'TECHNICIAN') && (
+                                    <NavItem to={`/tenants/${tenantId || user?.tenantId}/users`} icon={<UserPlus size={18} />} label="Benutzer" />
+                                )}
                             </div>
                         </div>
                     )}
@@ -403,19 +407,24 @@ function NavItem({ to, icon, label, end }: { to: string; icon: React.ReactNode; 
 
 function UserProfile() {
     const { user } = useAuth();
+    const navigate = useNavigate();
 
     const displayName = user?.displayName || user?.email || 'User';
     const initials = displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
     const roleLabel = user?.role === 'ADMIN' ? 'Admin' : user?.role === 'TECHNICIAN' ? 'Techniker' : 'Benutzer';
 
     return (
-        <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-800 p-1.5 pr-4 rounded-full transition-colors border border-transparent hover:border-slate-200/50 dark:hover:border-slate-700">
+        <div
+            onClick={() => navigate('/profile')}
+            className="flex items-center gap-3 cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-800 p-1.5 pr-4 rounded-full transition-colors border border-transparent hover:border-slate-200/50 dark:hover:border-slate-700"
+            title="Profil & Sicherheit"
+        >
             <div className="h-9 w-9 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 flex items-center justify-center text-xs font-bold border border-primary-200 dark:border-primary-800">
                 {initials}
             </div>
             <div className="hidden md:block text-xs text-left">
                 <p className="font-semibold text-slate-700 dark:text-slate-200">{displayName}</p>
-                <p className="text-slate-400 font-medium text-[10px]">{roleLabel}</p>
+                <p className="text-slate-400 font-medium text-[10px]">{roleLabel}{!user?.totpEnabled && user?.totpRequired ? ' · ⚠️ 2FA fehlt' : ''}</p>
             </div>
         </div>
     );

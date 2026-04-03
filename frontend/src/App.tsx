@@ -8,6 +8,7 @@ import { ThemeProvider } from './hooks/useTheme';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
 import LoginPage from './pages/LoginPage';
 import SetupPage from './pages/SetupPage';
+import ProfilePage from './pages/ProfilePage';
 import DashboardPage from './pages/DashboardPage';
 import TenantListPage from './pages/TenantListPage';
 import TenantDashboardPage from './pages/TenantDashboardPage';
@@ -27,10 +28,15 @@ import ConnectionsPage from './pages/ConnectionsPage';
 const queryClient = new QueryClient();
 
 // Guard: redirect to /login if not authenticated
+// TENANT_USER gets redirected to their assigned tenant
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   if (isLoading) return <LoginPage />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  // TENANT_USER accessing root → redirect to their tenant
+  if (user?.role === 'TENANT_USER' && user?.tenantId && window.location.pathname === '/') {
+    return <Navigate to={`/tenants/${user.tenantId}`} replace />;
+  }
   return <>{children}</>;
 }
 
@@ -66,6 +72,7 @@ function AppRoutes() {
         <Route path="tenants/:tenantId/wizard" element={<ErrorBoundary><OnboardingWizardPage /></ErrorBoundary>} />
         <Route path="tenants/:tenantId/connections" element={<ErrorBoundary><ConnectionsPage /></ErrorBoundary>} />
         <Route path="admin/users" element={<ErrorBoundary><UserManagementPage /></ErrorBoundary>} />
+        <Route path="profile" element={<ErrorBoundary><ProfilePage /></ErrorBoundary>} />
       </Route>
     </Routes>
   );

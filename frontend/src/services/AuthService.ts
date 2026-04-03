@@ -47,4 +47,8 @@ export const AuthServiceApi = {
         authFetch<LoginResponse>('/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
     verifyTotp: (pendingToken: string, code: string) =>
         authFetch<LoginResponse>('/totp/verify', { method: 'POST', body: JSON.stringify({ pendingToken, code }) }),
+    setupTotp: (token: string) =>
+        authFetch<TotpSetupResponse>('/me/totp/setup', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
+    confirmTotp: (token: string, code: string) =>
+        authFetch<void>('/me/totp/confirm', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ code }) }),
 };
