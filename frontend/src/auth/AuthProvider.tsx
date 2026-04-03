@@ -1,116 +1,75 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { UserManager, User, WebStorageStateStore } from 'oidc-client-ts';
 import { setTokenGetter } from '../services/apiClient';
+import { AuthServiceApi, type AuthUser, type LoginResponse } from '../services/AuthService';
 
 interface AuthContextType {
-    user: User | null;
+    user: AuthUser | null;
     isAuthenticated: boolean;
     isLoading: boolean;
-    login: () => void;
+    setupRequired: boolean;
+    pendingToken: string | null;
+    login: (email: string, password: string) => Promise<LoginResponse>;
+    verifyTotp: (code: string) => Promise<LoginResponse>;
     logout: () => void;
-    getAccessToken: () => string | null;
+    setAuthFromResponse: (response: LoginResponse) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
-    user: null,
-    isAuthenticated: false,
-    isLoading: true,
-    login: () => {},
-    logout: () => {},
-    getAccessToken: () => null,
+    user: null, isAuthenticated: false, isLoading: true, setupRequired: false, pendingToken: null,
+    login: async () => ({ token: null, pendingToken: null, requiresTotp: false, user: null }),
+    verifyTotp: async () => ({ token: null, pendingToken: null, requiresTotp: false, user: null }),
+    logout: () => {}, setAuthFromResponse: () => {},
 });
 
-export function useAuth() {
-    return useContext(AuthContext);
-}
-
-// ZITADEL OIDC configuration
-// Client ID will need to be configured after ZITADEL first start
-const ZITADEL_ISSUER = 'http://localhost:8085';
-
-function getClientId(): string {
-    return localStorage.getItem('mspdoku_oidc_client_id') || '';
-}
-
-function createUserManager(clientId: string): UserManager | null {
-    if (!clientId) return null;
-    return new UserManager({
-        authority: ZITADEL_ISSUER,
-        client_id: clientId,
-        redirect_uri: `${window.location.origin}/auth/callback`,
-        post_logout_redirect_uri: window.location.origin,
-        response_type: 'code',
-        scope: 'openid profile email',
-        userStore: new WebStorageStateStore({ store: window.sessionStorage }),
-    });
-}
+export function useAuth() { return useContext(AuthContext); }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<AuthUser | null>(null);
+    const [token, setToken] = useState<string | null>(null);
+    const [pendingToken, setPendingToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [userManager, setUserManager] = useState<UserManager | null>(null);
-
-    // Wire token getter into apiClient whenever user changes
-    useEffect(() => {
-        setTokenGetter(() => user?.access_token || null);
-    }, [user]);
+    const [setupRequired, setSetupRequired] = useState(false);
 
     useEffect(() => {
-        const clientId = getClientId();
-        if (!clientId) {
-            setIsLoading(false);
-            return;
-        }
-        const mgr = createUserManager(clientId);
-        setUserManager(mgr);
-        if (!mgr) { setIsLoading(false); return; }
-
-        // Check if returning from OIDC callback
-        if (window.location.pathname === '/auth/callback') {
-            mgr.signinRedirectCallback()
-                .then((u) => {
-                    setUser(u);
-                    window.history.replaceState({}, '', '/');
-                })
-                .catch((err) => {
-                    console.error('OIDC callback error:', err);
-                    window.history.replaceState({}, '', '/');
-                })
-                .finally(() => setIsLoading(false));
-        } else {
-            // Try to get existing user from session
-            mgr.getUser()
-                .then((u) => {
-                    if (u && !u.expired) {
-                        setUser(u);
-                    }
-                })
-                .finally(() => setIsLoading(false));
-        }
+        AuthServiceApi.getConfig()
+            .then((config) => setSetupRequired(config.setupRequired))
+            .catch(() => {})
+            .finally(() => setIsLoading(false));
     }, []);
 
-    const login = () => {
-        const clientId = getClientId();
-        if (!clientId) {
-            // Redirect to setup page
-            window.location.href = '/setup';
-            return;
+    useEffect(() => { setTokenGetter(() => token); }, [token]);
+
+    useEffect(() => {
+        const handler = () => { setToken(null); setUser(null); };
+        window.addEventListener('auth:unauthorized', handler);
+        return () => window.removeEventListener('auth:unauthorized', handler);
+    }, []);
+
+    const setAuthFromResponse = (response: LoginResponse) => {
+        if (response.token && response.user) {
+            setToken(response.token); setUser(response.user);
+            setSetupRequired(false); setPendingToken(null);
         }
-        const mgr = userManager || createUserManager(clientId);
-        mgr?.signinRedirect();
+        if (response.pendingToken) setPendingToken(response.pendingToken);
     };
 
-    const logout = () => {
-        if (userManager) {
-            userManager.signoutRedirect();
-        }
-        setUser(null);
+    const login = async (email: string, password: string): Promise<LoginResponse> => {
+        const response = await AuthServiceApi.login(email, password);
+        setAuthFromResponse(response);
+        return response;
     };
 
-    const getAccessToken = () => user?.access_token || null;
+    const verifyTotp = async (code: string): Promise<LoginResponse> => {
+        if (!pendingToken) throw new Error('No pending token');
+        const response = await AuthServiceApi.verifyTotp(pendingToken, code);
+        setAuthFromResponse(response);
+        return response;
+    };
+
+    const logout = () => { setToken(null); setUser(null); setPendingToken(null); };
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user && !user.expired, isLoading, login, logout, getAccessToken }}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!token && !!user, isLoading, setupRequired, pendingToken, login, verifyTotp, logout, setAuthFromResponse }}>
             {children}
         </AuthContext.Provider>
     );

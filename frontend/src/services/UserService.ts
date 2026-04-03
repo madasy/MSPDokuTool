@@ -1,31 +1,31 @@
 import { apiFetch } from './apiClient';
 
-export interface AutheliaUser {
-    username: string;
-    displayname: string;
+export interface UserInfo {
+    id: string;
     email: string;
-    groups: string[];
+    displayName: string | null;
+    role: string;
+    tenantId: string | null;
+    tenantName: string | null;
+    totpEnabled: boolean;
+    isActive: boolean;
+    lastLogin: string | null;
+    createdAt: string | null;
 }
 
 export interface CreateUserRequest {
-    username: string;
-    displayname: string;
     email: string;
+    displayName?: string;
     password: string;
-    groups: string[];
+    role: string;
+    tenantId?: string;
 }
 
 export const UserService = {
-    getAll: () => apiFetch<AutheliaUser[]>('/users'),
-    getByTenant: (tenantIdentifier: string) => apiFetch<AutheliaUser[]>(`/users/tenant/${tenantIdentifier}`),
-    create: (data: CreateUserRequest) => apiFetch<AutheliaUser>('/users', {
-        method: 'POST',
-        body: JSON.stringify(data),
-    }),
-    delete: (username: string) => apiFetch<void>(`/users/${username}`, { method: 'DELETE' }),
-    resetPassword: (username: string, password: string) => apiFetch<void>(`/users/${username}/password`, {
-        method: 'PUT',
-        body: JSON.stringify({ password }),
-    }),
-    resetTotp: (username: string) => apiFetch<void>(`/users/${username}/reset-totp`, { method: 'POST' }),
+    getAll: () => apiFetch<UserInfo[]>('/users'),
+    create: (data: CreateUserRequest) => apiFetch<UserInfo>('/users', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<CreateUserRequest>) => apiFetch<UserInfo>(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => apiFetch<void>(`/users/${id}`, { method: 'DELETE' }),
+    resetPassword: (id: string, newPassword: string) => apiFetch<void>(`/users/${id}/reset-password`, { method: 'POST', body: JSON.stringify({ newPassword }) }),
+    resetTotp: (id: string) => apiFetch<void>(`/users/${id}/reset-totp`, { method: 'POST' }),
 };

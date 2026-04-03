@@ -39,8 +39,6 @@ function AppRoutes() {
       {/* Public routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/setup" element={<SetupPage />} />
-      {/* OIDC callback — AuthProvider handles the actual processing */}
-      <Route path="/auth/callback" element={<LoginPage />} />
 
       {/* Protected routes */}
       <Route
@@ -65,6 +63,7 @@ function AppRoutes() {
         <Route path="tenants/:tenantId/docs" element={<ErrorBoundary><DocumentationPage /></ErrorBoundary>} />
         <Route path="tenants/:tenantId/users" element={<ErrorBoundary><UserManagementPage /></ErrorBoundary>} />
         <Route path="tenants/:tenantId/wizard" element={<ErrorBoundary><OnboardingWizardPage /></ErrorBoundary>} />
+        <Route path="admin/users" element={<ErrorBoundary><UserManagementPage /></ErrorBoundary>} />
       </Route>
     </Routes>
   );

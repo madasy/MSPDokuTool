@@ -12,6 +12,7 @@ export default function Layout() {
     const location = useLocation();
     const params = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     // 1. Determine Tenant Context
     const tenantId = params.tenantId || (location.pathname.startsWith('/tenants/') ? location.pathname.split('/')[2] : null);
@@ -95,6 +96,9 @@ export default function Layout() {
                         <NavItem to="/" icon={<LayoutDashboard size={18} />} label="Dashboard" end />
                         <NavItem to="/tenants" icon={<Users size={18} />} label="Tenants" />
                         <NavItem to="/datacenter" icon={<Globe size={18} />} label="Datacenter / IPs" />
+                        {user?.role === 'ADMIN' && (
+                            <NavItem to="/admin/users" icon={<UserPlus size={18} />} label="Benutzer" />
+                        )}
                     </div>
 
                     {/* Tenant-scoped nav — only when a tenant is selected */}
@@ -395,21 +399,11 @@ function NavItem({ to, icon, label, end }: { to: string; icon: React.ReactNode; 
 }
 
 function UserProfile() {
-    const { user: oidcUser } = useAuth();
-    const { data: apiUser } = useQuery({
-        queryKey: ['auth', 'me'],
-        queryFn: () => fetch('/api/v1/auth/me').then(r => r.ok ? r.json() : null),
-        staleTime: 60000,
-        retry: false,
-    });
+    const { user } = useAuth();
 
-    // Prefer API user data, fall back to OIDC token claims
-    const oidcProfile = oidcUser?.profile;
-    const displayName = apiUser?.displayName || apiUser?.username
-        || oidcProfile?.name || oidcProfile?.preferred_username || 'User';
+    const displayName = user?.displayName || user?.email || 'User';
     const initials = displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
-    const groups = (apiUser?.groups as string[]) || [];
-    const role = groups.includes('admins') ? 'Admin' : groups.includes('technicians') ? 'Techniker' : 'User';
+    const roleLabel = user?.role === 'ADMIN' ? 'Admin' : user?.role === 'TECHNICIAN' ? 'Techniker' : 'Benutzer';
 
     return (
         <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-800 p-1.5 pr-4 rounded-full transition-colors border border-transparent hover:border-slate-200/50 dark:hover:border-slate-700">
@@ -418,7 +412,7 @@ function UserProfile() {
             </div>
             <div className="hidden md:block text-xs text-left">
                 <p className="font-semibold text-slate-700 dark:text-slate-200">{displayName}</p>
-                <p className="text-slate-400 font-medium text-[10px]">{role}</p>
+                <p className="text-slate-400 font-medium text-[10px]">{roleLabel}</p>
             </div>
         </div>
     );
