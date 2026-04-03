@@ -1,34 +1,50 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Server, Network, Users, Monitor, X, Settings, Globe, Star, Zap } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { TenantService } from '../../services/TenantService';
-import { useFavorites } from '../../hooks/useFavorites';
+import {
+    Search, X, Cpu, Network, Hash, Building, Server, Layers, Users, FileText, Loader2,
+} from 'lucide-react';
+import { SearchService, SearchResult } from '../../services/SearchService';
 
-interface CommandAction {
-    id: string;
-    label: string;
-    category: string;
-    icon: React.ReactNode;
-    action: () => void;
+const TYPE_LABELS: Record<string, string> = {
+    device: 'Gerät',
+    subnet: 'Subnetz',
+    ip_address: 'IP-Adresse',
+    site: 'Standort',
+    rack: 'Rack',
+    vlan: 'VLAN',
+    tenant: 'Tenant',
+    documentation: 'Dokumentation',
+};
+
+function TypeIcon({ type }: { type: string }) {
+    const cls = 'shrink-0 text-slate-400';
+    switch (type) {
+        case 'device':        return <Cpu size={16} className={cls} />;
+        case 'subnet':        return <Network size={16} className={cls} />;
+        case 'ip_address':    return <Hash size={16} className={cls} />;
+        case 'site':          return <Building size={16} className={cls} />;
+        case 'rack':          return <Server size={16} className={cls} />;
+        case 'vlan':          return <Layers size={16} className={cls} />;
+        case 'tenant':        return <Users size={16} className={cls} />;
+        case 'documentation': return <FileText size={16} className={cls} />;
+        default:              return <Search size={16} className={cls} />;
+    }
 }
 
 export default function CommandPalette() {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
+    const [debouncedQuery, setDebouncedQuery] = useState('');
+    const [results, setResults] = useState<SearchResult[]>([]);
+    const [totalResults, setTotalResults] = useState(0);
+    const [loading, setLoading] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
+
     const inputRef = useRef<HTMLInputElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
-    const { favorites } = useFavorites();
 
-    // Fetch real tenants for search
-    const { data: tenants } = useQuery({
-        queryKey: ['tenants'],
-        queryFn: TenantService.getAll,
-        enabled: open, // Only fetch when palette is open
-    });
-
-    // CMD+K shortcut
+    // CMD+K / Escape shortcut
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -41,79 +57,71 @@ export default function CommandPalette() {
         return () => window.removeEventListener('keydown', handler);
     }, []);
 
+    // Auto-focus input and reset state when opened/closed
     useEffect(() => {
         if (open) {
             setTimeout(() => inputRef.current?.focus(), 50);
             setSelectedIndex(0);
         } else {
             setQuery('');
+            setDebouncedQuery('');
+            setResults([]);
+            setTotalResults(0);
         }
     }, [open]);
 
-    // Build dynamic actions list
-    const actions: CommandAction[] = [
-        // Quick Actions
-        { id: 'add-device', label: 'Gerät hinzufügen', category: 'Schnellaktionen', icon: <Zap size={16} />, action: () => { navigate('/tenants/demo/racks'); setOpen(false); } },
-        { id: 'assign-ip', label: 'Public IP zuweisen', category: 'Schnellaktionen', icon: <Network size={16} />, action: () => { navigate('/datacenter'); setOpen(false); } },
+    // Debounce query
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedQuery(query), 300);
+        return () => clearTimeout(timer);
+    }, [query]);
 
-        // Navigation
-        { id: 'go-dashboard', label: 'Dashboard', category: 'Navigation', icon: <Monitor size={16} />, action: () => { navigate('/'); setOpen(false); } },
-        { id: 'go-tenants', label: 'Tenants', category: 'Navigation', icon: <Users size={16} />, action: () => { navigate('/tenants'); setOpen(false); } },
-        { id: 'go-datacenter', label: 'Datacenter / Public IPs', category: 'Navigation', icon: <Globe size={16} />, action: () => { navigate('/datacenter'); setOpen(false); } },
-        { id: 'go-settings', label: 'Einstellungen', category: 'Navigation', icon: <Settings size={16} />, action: () => { navigate('/settings'); setOpen(false); } },
-    ];
+    // Reset selection when query changes
+    useEffect(() => { setSelectedIndex(0); }, [query]);
 
-    // Add dynamic tenant entries
-    if (tenants) {
-        tenants.forEach(t => {
-            actions.push({
-                id: `tenant-${t.id}`,
-                label: t.name,
-                category: 'Tenants',
-                icon: <Users size={16} />,
-                action: () => { navigate(`/tenants/${t.id}`); setOpen(false); },
+    // Fetch results when debounced query changes
+    useEffect(() => {
+        if (!debouncedQuery.trim()) {
+            setResults([]);
+            setTotalResults(0);
+            return;
+        }
+        let cancelled = false;
+        setLoading(true);
+        SearchService.search(debouncedQuery)
+            .then(data => {
+                if (!cancelled) {
+                    setResults(data.results);
+                    setTotalResults(data.totalResults);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setResults([]);
+                    setTotalResults(0);
+                }
+            })
+            .finally(() => {
+                if (!cancelled) setLoading(false);
             });
-            // Also add racks & network shortcuts per tenant
-            actions.push({
-                id: `tenant-${t.id}-racks`,
-                label: `${t.name} → Racks & Hardware`,
-                category: 'Tenants',
-                icon: <Server size={16} />,
-                action: () => { navigate(`/tenants/${t.id}/racks`); setOpen(false); },
-            });
-            actions.push({
-                id: `tenant-${t.id}-network`,
-                label: `${t.name} → IP-Plan`,
-                category: 'Tenants',
-                icon: <Network size={16} />,
-                action: () => { navigate(`/tenants/${t.id}/network`); setOpen(false); },
-            });
-        });
-    }
+        return () => { cancelled = true; };
+    }, [debouncedQuery]);
 
-    // Add favorites as searchable items
-    favorites.forEach(fav => {
-        actions.push({
-            id: `fav-${fav.id}`,
-            label: `★ ${fav.label}`,
-            category: 'Favoriten',
-            icon: <Star size={16} />,
-            action: () => { navigate(fav.path); setOpen(false); },
-        });
-    });
-
-    const filtered = query
-        ? actions.filter(a => a.label.toLowerCase().includes(query.toLowerCase()))
-        : actions;
-
-    const grouped = filtered.reduce((acc, a) => {
-        if (!acc[a.category]) acc[a.category] = [];
-        acc[a.category].push(a);
+    // Group results by type
+    const grouped = results.reduce((acc, r) => {
+        const key = r.type;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(r);
         return acc;
-    }, {} as Record<string, CommandAction[]>);
+    }, {} as Record<string, SearchResult[]>);
 
-    // Flatten for keyboard navigation
+    // Flat list for keyboard navigation
     const flatItems = Object.values(grouped).flat();
+
+    const handleSelect = useCallback((result: SearchResult) => {
+        navigate(result.link);
+        setOpen(false);
+    }, [navigate]);
 
     // Keyboard navigation
     useEffect(() => {
@@ -127,84 +135,116 @@ export default function CommandPalette() {
                 setSelectedIndex(prev => Math.max(prev - 1, 0));
             } else if (e.key === 'Enter' && flatItems[selectedIndex]) {
                 e.preventDefault();
-                flatItems[selectedIndex].action();
+                handleSelect(flatItems[selectedIndex]);
             }
         };
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
-    }, [open, selectedIndex, flatItems]);
+    }, [open, selectedIndex, flatItems, handleSelect]);
 
-    // Reset selection when query changes
-    useEffect(() => { setSelectedIndex(0); }, [query]);
+    // Scroll active item into view
+    useEffect(() => {
+        const activeEl = listRef.current?.querySelector('[data-active="true"]');
+        activeEl?.scrollIntoView({ block: 'nearest' });
+    }, [selectedIndex]);
 
     if (!open) return null;
 
     let itemIndex = -1;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]" onClick={() => setOpen(false)}>
-            {/* Backdrop */}
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-fade-in" />
-
-            {/* Panel */}
+        <div
+            className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/50"
+            onClick={() => setOpen(false)}
+        >
+            {/* Modal */}
             <div
-                className="relative w-full max-w-lg bg-white/85 dark:bg-slate-800/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50 dark:border-white/10 overflow-hidden animate-slide-in"
+                className="relative w-full max-w-2xl bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Search Input */}
-                <div className="flex items-center gap-3 px-4 py-3 border-b border-white/60 dark:border-white/10">
-                    <Search size={18} className="text-slate-400 flex-shrink-0" />
+                <div className="flex items-center gap-3 px-4 border-b border-slate-200 dark:border-slate-700">
+                    {loading
+                        ? <Loader2 size={18} className="text-slate-400 shrink-0 animate-spin" />
+                        : <Search size={18} className="text-slate-400 shrink-0" />
+                    }
                     <input
                         ref={inputRef}
                         value={query}
                         onChange={e => setQuery(e.target.value)}
-                        placeholder="Suche Tenant, IP, Gerät, Aktion..."
-                        className="flex-1 text-sm bg-transparent outline-none placeholder:text-slate-400 dark:text-white"
+                        placeholder="Suche..."
+                        className="flex-1 bg-transparent outline-none py-4 text-lg text-slate-900 dark:text-white placeholder:text-slate-400"
                     />
-                    <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                    <button
+                        onClick={() => setOpen(false)}
+                        className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
+                    >
                         <X size={16} />
                     </button>
                 </div>
 
-                {/* Results */}
-                <div className="max-h-80 overflow-y-auto py-2">
-                    {Object.entries(grouped).map(([category, items]) => (
-                        <div key={category}>
+                {/* Results List */}
+                <div ref={listRef} className="max-h-96 overflow-y-auto py-2">
+                    {debouncedQuery.trim() && !loading && results.length === 0 && (
+                        <div className="px-4 py-8 text-center text-sm text-slate-400">
+                            Keine Ergebnisse für &quot;{debouncedQuery}&quot;
+                        </div>
+                    )}
+
+                    {!debouncedQuery.trim() && (
+                        <div className="px-4 py-8 text-center text-sm text-slate-400">
+                            Suchbegriff eingeben…
+                        </div>
+                    )}
+
+                    {Object.entries(grouped).map(([type, items]) => (
+                        <div key={type}>
+                            {/* Group header */}
                             <div className="px-4 py-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                                {category}
+                                {TYPE_LABELS[type] ?? type}
                             </div>
+
                             {items.map(item => {
                                 itemIndex++;
-                                const isSelected = itemIndex === selectedIndex;
+                                const isActive = itemIndex === selectedIndex;
                                 return (
                                     <button
-                                        key={item.id}
-                                        onClick={item.action}
-                                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-left ${isSelected
-                                                ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-                                                : 'text-slate-700 dark:text-slate-300 hover:bg-primary-50/80 hover:text-primary-700'
-                                            }`}
+                                        key={`${item.type}-${item.id}`}
+                                        data-active={isActive}
+                                        onClick={() => handleSelect(item)}
+                                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors ${
+                                            isActive
+                                                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                                                : 'text-slate-700 dark:text-slate-300 hover:bg-primary-50/70 dark:hover:bg-primary-900/10'
+                                        }`}
                                     >
-                                        <span className="text-slate-400">{item.icon}</span>
-                                        <span>{item.label}</span>
+                                        <TypeIcon type={item.type} />
+                                        <span className="flex-1 min-w-0">
+                                            <span className="block truncate font-medium">{item.title}</span>
+                                            {item.subtitle && (
+                                                <span className="block truncate text-xs text-slate-400">{item.subtitle}</span>
+                                            )}
+                                        </span>
+                                        {item.tenantName && (
+                                            <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                                                {item.tenantName}
+                                            </span>
+                                        )}
                                     </button>
                                 );
                             })}
                         </div>
                     ))}
-                    {filtered.length === 0 && (
-                        <div className="px-4 py-8 text-center text-sm text-slate-400">
-                            Keine Ergebnisse für &quot;{query}&quot;
-                        </div>
-                    )}
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center gap-4 px-4 py-2 border-t border-white/60 dark:border-white/10 bg-white/70 dark:bg-slate-800/70 text-[10px] text-slate-400">
+                <div className="flex items-center gap-4 px-4 py-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 text-[10px] text-slate-400">
                     <span><kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-[9px]">↑↓</kbd> navigieren</span>
                     <span><kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-[9px]">↵</kbd> öffnen</span>
                     <span><kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-[9px]">ESC</kbd> schließen</span>
-                    {tenants && <span className="ml-auto">{tenants.length} Tenants geladen</span>}
+                    {debouncedQuery.trim() && !loading && (
+                        <span className="ml-auto">{totalResults} Ergebnis{totalResults !== 1 ? 'se' : ''}</span>
+                    )}
                 </div>
             </div>
         </div>
