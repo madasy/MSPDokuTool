@@ -15,18 +15,18 @@ class ConnectionController(private val connectionService: ConnectionService) {
         return connectionService.getDeviceConnections(deviceId)
     }
 
-    @GetMapping("/devices/{deviceId}/interfaces")
+    @GetMapping("/devices/{deviceId}/ports-interfaces")
     fun getInterfaces(@PathVariable deviceId: UUID): List<InterfaceDto> {
         return connectionService.getInterfacesForDevice(deviceId)
     }
 
-    @PostMapping("/interfaces")
+    @PostMapping("/port-interfaces")
     @ResponseStatus(HttpStatus.CREATED)
     fun createInterface(@RequestBody request: CreateInterfaceRequest): InterfaceDto {
         return connectionService.createInterface(request)
     }
 
-    @DeleteMapping("/interfaces/{id}")
+    @DeleteMapping("/port-interfaces/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteInterface(@PathVariable id: UUID) {
         connectionService.deleteInterface(id)

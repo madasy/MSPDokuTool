@@ -29,11 +29,11 @@ export const ConnectionService = {
     getDeviceConnections: (deviceId: string) =>
         apiFetch<DeviceConnectionSummary>(`/devices/${deviceId}/connections`),
     getInterfaces: (deviceId: string) =>
-        apiFetch<DeviceInterface[]>(`/devices/${deviceId}/interfaces`),
+        apiFetch<DeviceInterface[]>(`/devices/${deviceId}/ports-interfaces`),
     createInterface: (data: { deviceId: string; name: string; macAddress?: string; type?: string; description?: string }) =>
-        apiFetch<DeviceInterface>('/interfaces', { method: 'POST', body: JSON.stringify(data) }),
+        apiFetch<DeviceInterface>('/port-interfaces', { method: 'POST', body: JSON.stringify(data) }),
     deleteInterface: (id: string) =>
-        apiFetch<void>(`/interfaces/${id}`, { method: 'DELETE' }),
+        apiFetch<void>(`/port-interfaces/${id}`, { method: 'DELETE' }),
     getConnections: (tenantId: string) =>
         apiFetch<DeviceConnection[]>(`/connections?tenantId=${tenantId}`),
     createConnection: (data: { endpointAId: string; endpointBId: string; cableType?: string }) =>
