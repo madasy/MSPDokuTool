@@ -10,6 +10,8 @@ An open-source IT infrastructure documentation tool built specifically for Manag
 - Global tenant switcher in the sidebar
 - Per-customer infrastructure views
 - Customer-specific user accounts with 2FA
+- Tenant onboarding wizard (7-step guided setup)
+- Documentation health scoring per tenant
 
 ### Network & IPAM
 - Subnet management with VLAN assignment
@@ -23,6 +25,7 @@ An open-source IT infrastructure documentation tool built specifically for Manag
 - **Rack Diagrams** -- visual 42U rack layouts with device positioning
 - **Hardware Inventory** -- servers, switches, firewalls, APs, patch panels
 - **Switch Port Management** -- visual faceplate, VLAN assignment, port status
+- **Firewall Interfaces** -- WAN/LAN interface documentation
 - **Access Points** -- track APs with location, model, SSIDs, channel
 
 ### Structured Documentation (11 Templates)
@@ -41,68 +44,56 @@ Pre-built documentation sections per customer with structured fields + free-text
 11. **Naming Conventions** -- server, network, VLAN naming standards
 
 ### Authentication & User Management
-- **Authelia** integration for authentication (forward-auth via nginx)
-- Internal technicians: password-only login
-- Customer users: password + TOTP 2FA
-- Admin can create/delete tenant users, reset passwords and 2FA
-- LDAP-ready for production environments
+- Built-in JWT authentication (no external IdP required)
+- First-start admin creation wizard
+- Three roles: ADMIN, TECHNICIAN, TENANT_USER
+- Optional TOTP 2FA (required for tenant users, optional for admins/techs)
+- Admin can create users, reset passwords, and reset 2FA
+- Self-service password change and TOTP setup
 
 ### Dashboard
-- Aggregate stats across all tenants (devices, subnets, IPs)
-- Recent activity feed
+- Action-oriented tenant dashboard with documentation health scores
+- 7 category scores: Network, Hardware, Access, Monitoring, Backup, Recovery, Security
+- Action cards showing what's missing or needs attention
+- Aggregate stats and recent activity feed
+- Global search across all entities (Cmd+K)
 
 ## Quick Start
 
 ```bash
-# 1. Generate SSL certs (first time only)
-mkdir -p certs
-openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
-  -keyout certs/server.key -out certs/server.crt \
-  -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
-
-# 2. Start everything
 docker compose up
 ```
 
-Open **https://localhost:3443** (accept the self-signed cert warning)
+Open **http://localhost:3000**
 
-PostgreSQL, Spring Boot backend, React frontend, and Authelia all start automatically.
+On first start, you'll be prompted to create an admin account. After that, just login.
 
-### Test Accounts
-
-| Username | Password | Role | 2FA |
-|----------|----------|------|-----|
-| `admin` | `admin123` | Admin + Technician | No |
-| `technician` | `admin123` | Technician | No |
-
-Customer users can be created from the Benutzer (Users) page within each tenant. They are required to set up TOTP 2FA on first login.
+Three containers start automatically: PostgreSQL, Spring Boot backend, and React frontend.
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React 19, TypeScript, Vite 7, Tailwind CSS 4, React Query 5 |
-| Backend | Kotlin, Spring Boot 3.3, Spring Data JPA |
+| Backend | Kotlin, Spring Boot 3.3, Spring Data JPA, Spring Security |
 | Database | PostgreSQL 16 |
-| Auth | Authelia (forward-auth proxy) |
+| Auth | Built-in JWT + BCrypt + TOTP |
 | Migrations | Flyway |
 | Containerization | Docker, nginx |
 
 ## Architecture
 
 ```
-Browser :3443 --> nginx (HTTPS + forward-auth)
+Browser :3000 --> nginx (frontend)
                     |
-                    |--> /authelia/* --> Authelia :9091 (login, 2FA, session)
                     |--> /api/v1/*  --> Spring Boot :8080 --> PostgreSQL :5432
                     |--> /*         --> React SPA (static files)
 ```
 
-Four Docker containers:
-- **mspdoku-frontend** -- nginx with HTTPS, Authelia forward-auth, serves React build, proxies API
-- **mspdoku-backend** -- Spring Boot REST API
+Three Docker containers:
+- **mspdoku-frontend** -- nginx serving the React build + proxying API
+- **mspdoku-backend** -- Spring Boot REST API with JWT auth
 - **mspdoku-postgres** -- PostgreSQL 16
-- **mspdoku-authelia** -- Authentication portal (login, 2FA, session management)
 
 ## Development
 
@@ -139,75 +130,83 @@ docker compose down -v
 docker compose up
 ```
 
-### Trust Self-Signed Cert (macOS)
-
-```bash
-sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain certs/server.crt
-```
-
 ## API Endpoints
+
+### Authentication
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/v1/auth/config` | Public | Check if setup is required |
+| POST | `/api/v1/auth/setup` | Public | Create first admin (first start only) |
+| POST | `/api/v1/auth/login` | Public | Login with email + password |
+| POST | `/api/v1/auth/totp/verify` | Public | Verify TOTP code after login |
+| GET | `/api/v1/auth/me` | Auth | Get current user info |
+| PUT | `/api/v1/auth/me/password` | Auth | Change own password |
+| POST | `/api/v1/auth/me/totp/setup` | Auth | Get TOTP QR code |
+| POST | `/api/v1/auth/me/totp/confirm` | Auth | Confirm TOTP setup |
+
+### User Management (Admin only)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/users` | List all users |
+| POST | `/api/v1/users` | Create user |
+| PUT | `/api/v1/users/{id}` | Update user |
+| DELETE | `/api/v1/users/{id}` | Deactivate user |
+| POST | `/api/v1/users/{id}/reset-password` | Reset password |
+| POST | `/api/v1/users/{id}/reset-totp` | Reset 2FA |
 
 ### Global
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/v1/dashboard/stats` | Aggregate counts (tenants, devices, subnets, IPs) |
-| GET | `/api/v1/dashboard/activity?limit=20` | Recent changes across all tenants |
+| GET | `/api/v1/dashboard/stats` | Aggregate counts |
+| GET | `/api/v1/dashboard/activity?limit=20` | Recent changes |
 | GET | `/api/v1/tenants` | List all tenants |
 | POST | `/api/v1/tenants` | Create tenant |
-| GET | `/api/v1/datacenter/ip-ranges` | List public IP ranges |
-| POST | `/api/v1/datacenter/ip-ranges` | Create public IP range |
+| GET | `/api/v1/tenants/{id}/health` | Tenant health score |
+| GET | `/api/v1/search?q=query` | Global search |
+| GET | `/api/v1/datacenter/ip-ranges` | Public IP ranges |
 
 ### Tenant-Scoped
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/v1/tenants/{id}/summary` | Infrastructure summary |
-| GET | `/api/v1/devices?tenantId={id}` | Devices for tenant |
+| GET | `/api/v1/devices?tenantId={id}` | Devices |
 | GET | `/api/v1/racks?tenantId={id}` | Racks with devices |
+| GET | `/api/v1/sites?tenantId={id}` | Sites |
+| GET | `/api/v1/rooms?siteId={id}` | Rooms |
 | GET | `/api/v1/network/subnets?tenantId={id}` | Subnets |
-| GET | `/api/v1/network/subnets/{id}/ips` | IP addresses in subnet |
-| GET | `/api/v1/sites?tenantId={id}` | Sites for tenant |
-| GET | `/api/v1/rooms?siteId={id}` | Rooms in site |
+| GET | `/api/v1/network/subnets/{id}/ips` | IP addresses |
 | GET | `/api/v1/devices/{id}/ports` | Switch ports |
 | GET | `/api/v1/access-points?tenantId={id}` | Access points |
-| GET | `/api/v1/tenants/{id}/docs` | Documentation sections overview |
-| GET | `/api/v1/tenants/{id}/docs/{type}` | Documentation section detail |
-| PUT | `/api/v1/tenants/{id}/docs/{type}` | Update documentation section |
-
-### User Management
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/users` | List all users |
-| POST | `/api/v1/users` | Create user |
-| DELETE | `/api/v1/users/{username}` | Delete user |
-| PUT | `/api/v1/users/{username}/password` | Reset password |
-| POST | `/api/v1/users/{username}/reset-totp` | Reset 2FA |
+| GET | `/api/v1/tenants/{id}/docs` | Documentation overview |
+| GET | `/api/v1/tenants/{id}/docs/{type}` | Documentation section |
+| PUT | `/api/v1/tenants/{id}/docs/{type}` | Update documentation |
 
 ## Project Structure
 
 ```
 MSPDokuTool/
-  authelia/               # Authelia config (users, access control)
-  certs/                  # SSL certificates (gitignored)
   backend/
     src/main/kotlin/com/msp/doku/
       controller/         # REST endpoints
-      service/            # Business logic
+      service/            # Business logic (Auth, JWT, TOTP, CRUD)
       repository/         # JPA repositories
-      domain/             # Entities (Tenant, Device, Rack, Subnet, ...)
+      domain/             # Entities (Tenant, Device, Rack, Subnet, User, ...)
       dto/                # Data transfer objects
-      config/             # Security, CORS
+      config/             # Security, JWT filter, CORS
     src/main/resources/
-      db/migration/       # Flyway SQL migrations (V1-V10)
+      db/migration/       # Flyway SQL migrations (V1-V13)
   frontend/
     src/
+      auth/               # AuthProvider (JWT context)
       pages/              # Page components (Dashboard, Hardware, Racks, ...)
-      components/         # Reusable UI components (Layout, Toast, ...)
+      components/         # Reusable UI (Layout, Toast, CommandPalette, ...)
       services/           # API client wrappers
       hooks/              # Custom React hooks
-  docker-compose.yml      # Full stack: postgres + backend + frontend + authelia
+  docker-compose.yml      # postgres + backend + frontend
 ```
 
 ## Contributing
