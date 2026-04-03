@@ -23,13 +23,37 @@ const AuthContext = createContext<AuthContextType>({
 
 export function useAuth() { return useContext(AuthContext); }
 
+// Persist token in sessionStorage so it survives page refresh
+function loadStoredAuth(): { token: string | null; user: AuthUser | null } {
+    try {
+        const token = sessionStorage.getItem('mspdoku_token');
+        const userJson = sessionStorage.getItem('mspdoku_user');
+        if (token && userJson) {
+            return { token, user: JSON.parse(userJson) };
+        }
+    } catch { /* ignore parse errors */ }
+    return { token: null, user: null };
+}
+
+function saveAuth(token: string | null, user: AuthUser | null) {
+    if (token && user) {
+        sessionStorage.setItem('mspdoku_token', token);
+        sessionStorage.setItem('mspdoku_user', JSON.stringify(user));
+    } else {
+        sessionStorage.removeItem('mspdoku_token');
+        sessionStorage.removeItem('mspdoku_user');
+    }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<AuthUser | null>(null);
-    const [token, setToken] = useState<string | null>(null);
+    const stored = loadStoredAuth();
+    const [user, setUser] = useState<AuthUser | null>(stored.user);
+    const [token, setToken] = useState<string | null>(stored.token);
     const [pendingToken, setPendingToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [setupRequired, setSetupRequired] = useState(false);
 
+    // Check auth config on mount
     useEffect(() => {
         AuthServiceApi.getConfig()
             .then((config) => setSetupRequired(config.setupRequired))
@@ -37,18 +61,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .finally(() => setIsLoading(false));
     }, []);
 
+    // Wire token to apiClient
     useEffect(() => { setTokenGetter(() => token); }, [token]);
 
+    // Persist auth state changes
+    useEffect(() => { saveAuth(token, user); }, [token, user]);
+
+    // Listen for 401 events (token expired)
     useEffect(() => {
-        const handler = () => { setToken(null); setUser(null); };
+        const handler = () => {
+            setToken(null);
+            setUser(null);
+        };
         window.addEventListener('auth:unauthorized', handler);
         return () => window.removeEventListener('auth:unauthorized', handler);
     }, []);
 
     const setAuthFromResponse = (response: LoginResponse) => {
         if (response.token && response.user) {
-            setToken(response.token); setUser(response.user);
-            setSetupRequired(false); setPendingToken(null);
+            setToken(response.token);
+            setUser(response.user);
+            setSetupRequired(false);
+            setPendingToken(null);
         }
         if (response.pendingToken) setPendingToken(response.pendingToken);
     };
@@ -66,10 +100,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return response;
     };
 
-    const logout = () => { setToken(null); setUser(null); setPendingToken(null); };
+    const logout = () => {
+        setToken(null);
+        setUser(null);
+        setPendingToken(null);
+    };
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!token && !!user, isLoading, setupRequired, pendingToken, login, verifyTotp, logout, setAuthFromResponse }}>
+        <AuthContext.Provider value={{
+            user,
+            isAuthenticated: !!token && !!user,
+            isLoading,
+            setupRequired,
+            pendingToken,
+            login,
+            verifyTotp,
+            logout,
+            setAuthFromResponse,
+        }}>
             {children}
         </AuthContext.Provider>
     );

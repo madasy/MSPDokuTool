@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Building2, Plus, Loader2, ChevronDown, ChevronRight, MapPin, DoorOpen, X, Layers } from 'lucide-react';
+import { Building2, Plus, Loader2, ChevronDown, ChevronRight, MapPin, DoorOpen, X, Layers, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { SiteService, RoomService } from '../services/SiteService';
 import { RackService } from '../services/RackService';
 import type { Site, Room } from '../services/SiteService';
@@ -11,9 +12,11 @@ import { useToast } from '../components/ui/Toast';
 
 function SiteCard({
     site,
+    tenantId,
     onAddRoom,
 }: {
     site: Site;
+    tenantId: string;
     onAddRoom: (site: Site) => void;
 }) {
     const [expanded, setExpanded] = useState(false);
@@ -66,7 +69,7 @@ function SiteCard({
                     ) : rooms && rooms.length > 0 ? (
                         <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
                             {rooms.map((room: Room) => (
-                                <RoomRow key={room.id} room={room} />
+                                <RoomRow key={room.id} room={room} tenantId={tenantId} siteId={site.id} />
                             ))}
                         </div>
                     ) : (
@@ -91,7 +94,7 @@ function SiteCard({
     );
 }
 
-function RoomRow({ room }: { room: Room }) {
+function RoomRow({ room, tenantId, siteId }: { room: Room; tenantId: string; siteId: string }) {
     const [showAddRack, setShowAddRack] = useState(false);
     const [rackName, setRackName] = useState('');
     const queryClient = useQueryClient();
@@ -111,8 +114,20 @@ function RoomRow({ room }: { room: Room }) {
         },
     });
 
+    const deleteRoomMutation = useMutation({
+        mutationFn: () => RoomService.delete(room.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['rooms'] });
+            queryClient.invalidateQueries({ queryKey: ['sites'] });
+            addToast({ type: 'success', title: 'Raum gelöscht' });
+        },
+        onError: () => {
+            addToast({ type: 'error', title: 'Fehler', message: 'Raum konnte nicht gelöscht werden. Möglicherweise enthält er noch Racks.' });
+        },
+    });
+
     return (
-        <div className="px-4 py-3">
+        <div className="px-4 py-3 group">
             <div className="flex items-center gap-3">
                 <div className="h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 flex items-center justify-center flex-shrink-0">
                     <DoorOpen size={14} />
@@ -123,15 +138,37 @@ function RoomRow({ room }: { room: Room }) {
                         <p className="text-xs text-slate-400">Etage: {room.floor}</p>
                     )}
                 </div>
-                <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full flex-shrink-0 flex items-center gap-1">
-                    <Layers size={10} />
-                    {room.rackCount} {room.rackCount === 1 ? 'Rack' : 'Racks'}
-                </span>
+                {room.rackCount > 0 ? (
+                    <Link
+                        to={`/tenants/${tenantId}/racks`}
+                        className="text-xs text-primary-500 hover:text-primary-600 bg-primary-50 dark:bg-primary-900/20 px-2 py-0.5 rounded-full flex-shrink-0 flex items-center gap-1 hover:underline"
+                    >
+                        <Layers size={10} />
+                        {room.rackCount} {room.rackCount === 1 ? 'Rack' : 'Racks'} →
+                    </Link>
+                ) : (
+                    <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full flex-shrink-0 flex items-center gap-1">
+                        <Layers size={10} />
+                        0 Racks
+                    </span>
+                )}
                 <button
                     onClick={() => setShowAddRack(!showAddRack)}
                     className="text-xs text-primary-500 hover:text-primary-600 font-medium flex items-center gap-1 cursor-pointer"
+                    title="Rack hinzufügen"
                 >
                     <Plus size={12} /> Rack
+                </button>
+                <button
+                    onClick={() => {
+                        if (confirm(`Raum "${room.name}" wirklich löschen?`)) {
+                            deleteRoomMutation.mutate();
+                        }
+                    }}
+                    className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-all cursor-pointer p-1"
+                    title="Raum löschen"
+                >
+                    <Trash2 size={13} />
                 </button>
             </div>
             {showAddRack && (
@@ -378,6 +415,7 @@ export default function SitesPage() {
                         <SiteCard
                             key={site.id}
                             site={site}
+                            tenantId={tenantId!}
                             onAddRoom={setAddRoomForSite}
                         />
                     ))}

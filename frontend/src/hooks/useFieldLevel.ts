@@ -3,8 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { TenantService } from '../services/TenantService';
 
 const PROFILE_DEFAULTS: Record<string, { showAdvanced: boolean; hiddenModules: string[] }> = {
-    SMALL_OFFICE: { showAdvanced: false, hiddenModules: ['racks', 'switches', 'firewall', 'access-points'] },
-    SINGLE_SITE: { showAdvanced: false, hiddenModules: ['racks'] },
+    SMALL_OFFICE: { showAdvanced: false, hiddenModules: ['racks', 'access-points'] },
+    SINGLE_SITE: { showAdvanced: false, hiddenModules: [] },
     MULTI_SITE: { showAdvanced: true, hiddenModules: [] },
     MANAGED_INFRA: { showAdvanced: true, hiddenModules: [] },
     SECURITY_FOCUSED: { showAdvanced: true, hiddenModules: [] },
