@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     Search, X, Cpu, Network, Hash, Building, Server, Layers, Users, FileText, Loader2,
 } from 'lucide-react';
-import { SearchService, SearchResult } from '../../services/SearchService';
+import { SearchService, type SearchResult } from '../../services/SearchService';
 
 const TYPE_LABELS: Record<string, string> = {
     device: 'Gerät',
