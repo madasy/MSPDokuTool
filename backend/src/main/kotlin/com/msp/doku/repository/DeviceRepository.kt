@@ -8,4 +8,6 @@ import java.util.UUID
 @Repository
 interface DeviceRepository : JpaRepository<Device, UUID> {
     fun findByRackId(rackId: UUID): List<Device>
+    fun findByAssignedTenantId(tenantId: UUID): List<Device>
+    fun existsByAssignedTenantId(tenantId: UUID): Boolean
 }

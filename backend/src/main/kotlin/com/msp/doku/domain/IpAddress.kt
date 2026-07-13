@@ -25,6 +25,10 @@ class IpAddress(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "interface_id")
-    var networkInterface: Interface? = null
+    var networkInterface: Interface? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_tenant_id")
+    var assignedTenant: Tenant? = null
 
 ) : BaseEntity()

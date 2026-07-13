@@ -57,6 +57,10 @@ class Device(
     // If not in Rack
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id")
-    var site: Site? = null
+    var site: Site? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_tenant_id")
+    var assignedTenant: Tenant? = null
 
 ) : BaseEntity()
