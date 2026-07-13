@@ -102,6 +102,9 @@ class PublicIpRangeService(
         if (request.assignedTenantId != null) {
             assignment.assignedTenant = tenantRepository.findById(request.assignedTenantId).orElse(null)
         }
+        if (request.clearAssignedTenant) {
+            assignment.assignedTenant = null
+        }
         if (request.assignedDeviceId != null) {
             assignment.assignedDevice = deviceRepository.findById(request.assignedDeviceId).orElse(null)
         }

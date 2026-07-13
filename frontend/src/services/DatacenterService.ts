@@ -36,6 +36,7 @@ export interface UpdateAssignmentRequest {
     assignedDeviceId?: string;
     description?: string;
     status?: string;
+    clearAssignedTenant?: boolean;
 }
 
 export const DatacenterService = {

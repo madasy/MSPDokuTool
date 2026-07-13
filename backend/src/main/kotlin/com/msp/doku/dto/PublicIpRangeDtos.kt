@@ -46,5 +46,6 @@ data class UpdateIpAssignmentRequest(
     val assignedTenantId: UUID? = null,
     val assignedDeviceId: UUID? = null,
     val description: String? = null,
-    val status: String? = null
+    val status: String? = null,
+    val clearAssignedTenant: Boolean = false
 )

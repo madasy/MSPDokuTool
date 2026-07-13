@@ -375,7 +375,7 @@ function EditIpModal({ assignment, onClose, onSubmit, isSubmitting }: {
                 <div className="flex justify-end gap-2 mt-6">
                     <button onClick={onClose} className="btn-secondary text-xs">Abbrechen</button>
                     <button
-                        onClick={() => onSubmit({ status, description: description || undefined, assignedTenantId: assignedTenantId || null })}
+                        onClick={() => onSubmit({ status, description: description || undefined, assignedTenantId: assignedTenantId || undefined, clearAssignedTenant: !assignedTenantId })}
                         disabled={isSubmitting}
                         className="btn-primary text-xs"
                     >
