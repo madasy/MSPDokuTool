@@ -34,7 +34,9 @@ data class DeviceDto(
     val rackName: String?,
     val siteId: UUID?,
     val rj45Ports: Int = 0,
-    val sfpPorts: Int = 0
+    val sfpPorts: Int = 0,
+    val assignedTenantId: UUID? = null,
+    val assignedTenantName: String? = null
 )
 
 data class CreateDeviceRequest(
@@ -69,7 +71,9 @@ fun Device.toDeviceDto() = DeviceDto(
     rackName = this.rack?.name,
     siteId = this.site?.id,
     rj45Ports = this.rj45Ports,
-    sfpPorts = this.sfpPorts
+    sfpPorts = this.sfpPorts,
+    assignedTenantId = this.assignedTenant?.id,
+    assignedTenantName = this.assignedTenant?.name
 )
 
 fun Rack.toRackDto(devices: List<Device> = emptyList()) = RackDto(

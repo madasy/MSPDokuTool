@@ -37,6 +37,8 @@ class NetworkService(
                 vlanTag = subnet.vlan?.vlanId,
                 vlanName = subnet.vlan?.name ?: (subnet.vlan?.vlanId?.toString()),
                 gateway = subnet.gateway,
+                assignedTenantId = subnet.assignedTenant?.id,
+                assignedTenantName = subnet.assignedTenant?.name,
                 usedIps = usedIps,
                 totalIps = totalIps,
                 utilizationPercent = if (totalIps > 0) (usedIps.toDouble() / totalIps) * 100 else 0.0
@@ -85,6 +87,8 @@ class NetworkService(
             id = saved.id!!,
             cidr = saved.cidr,
             description = saved.description,
+            assignedTenantId = saved.assignedTenant?.id,
+            assignedTenantName = saved.assignedTenant?.name,
             usedIps = 0,
             totalIps = calculateTotalIps(saved.cidr),
             utilizationPercent = 0.0
