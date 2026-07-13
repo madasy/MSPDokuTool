@@ -90,6 +90,8 @@ class RackService(
         heightU = this.heightU,
         status = this.status,
         rackId = this.rack?.id,
-        rackName = this.rack?.name
+        rackName = this.rack?.name,
+        assignedTenantId = this.assignedTenant?.id,
+        assignedTenantName = this.assignedTenant?.name
     )
 }
