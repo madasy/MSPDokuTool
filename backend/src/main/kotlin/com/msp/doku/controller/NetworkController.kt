@@ -21,6 +21,11 @@ class NetworkController(
         return networkService.getSubnetsForTenant(tenantId)
     }
 
+    @GetMapping("/public-subnets")
+    fun getPublicSubnets(): List<SubnetDto> {
+        return networkService.getPublicSubnets()
+    }
+
     @PostMapping("/subnets")
     @ResponseStatus(HttpStatus.CREATED)
     fun createSubnet(@RequestBody request: CreateSubnetRequest): SubnetDto {

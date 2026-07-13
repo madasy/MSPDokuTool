@@ -25,7 +25,8 @@ data class CreateSubnetRequest(
     val vlanTag: Int? = null,
     val vlanName: String? = null,
     val gateway: String? = null,
-    val tenantId: UUID
+    val tenantId: UUID,
+    val isPublic: Boolean = false
 )
 
 data class IpAddressDto(

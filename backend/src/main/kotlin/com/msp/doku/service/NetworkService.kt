@@ -25,26 +25,31 @@ class NetworkService(
 ) {
 
     fun getSubnetsForTenant(tenantId: UUID): List<SubnetDto> {
-        return subnetRepository.findByTenantId(tenantId).map { subnet ->
-            val usedIps = ipAddressRepository.countBySubnetId(subnet.id!!)
-            val totalIps = calculateTotalIps(subnet.cidr)
-            
-            SubnetDto(
-                id = subnet.id!!,
-                cidr = subnet.cidr,
-                description = subnet.description,
-                vlanId = subnet.vlan?.id,
-                vlanTag = subnet.vlan?.vlanId,
-                vlanName = subnet.vlan?.name ?: (subnet.vlan?.vlanId?.toString()),
-                gateway = subnet.gateway,
-                isPublic = subnet.isPublic,
-                assignedTenantId = subnet.assignedTenant?.id,
-                assignedTenantName = subnet.assignedTenant?.name,
-                usedIps = usedIps,
-                totalIps = totalIps,
-                utilizationPercent = if (totalIps > 0) (usedIps.toDouble() / totalIps) * 100 else 0.0
-            )
-        }
+        return subnetRepository.findByTenantId(tenantId).map { it.toDtoWithStats() }
+    }
+
+    fun getPublicSubnets(): List<SubnetDto> {
+        return subnetRepository.findByIsPublicTrue().map { it.toDtoWithStats() }
+    }
+
+    private fun Subnet.toDtoWithStats(): SubnetDto {
+        val usedIps = ipAddressRepository.countBySubnetId(this.id!!)
+        val totalIps = calculateTotalIps(this.cidr)
+        return SubnetDto(
+            id = this.id!!,
+            cidr = this.cidr,
+            description = this.description,
+            vlanId = this.vlan?.id,
+            vlanTag = this.vlan?.vlanId,
+            vlanName = this.vlan?.name ?: this.vlan?.vlanId?.toString(),
+            gateway = this.gateway,
+            isPublic = this.isPublic,
+            assignedTenantId = this.assignedTenant?.id,
+            assignedTenantName = this.assignedTenant?.name,
+            usedIps = usedIps,
+            totalIps = totalIps,
+            utilizationPercent = if (totalIps > 0) (usedIps.toDouble() / totalIps) * 100 else 0.0
+        )
     }
 
     fun getIpAddresses(subnetId: UUID): List<IpAddressDto> {
@@ -60,7 +65,8 @@ class NetworkService(
             tenant = tenant,
             cidr = request.cidr,
             description = request.description?.ifBlank { null },
-            gateway = request.gateway?.ifBlank { null }
+            gateway = request.gateway?.ifBlank { null },
+            isPublic = request.isPublic
         )
 
         // Handle VLAN logic
@@ -83,18 +89,8 @@ class NetworkService(
             subnet.vlan = vlan
         }
         val saved = subnetRepository.save(subnet)
-        
-        return SubnetDto(
-            id = saved.id!!,
-            cidr = saved.cidr,
-            description = saved.description,
-            isPublic = saved.isPublic,
-            assignedTenantId = saved.assignedTenant?.id,
-            assignedTenantName = saved.assignedTenant?.name,
-            usedIps = 0,
-            totalIps = calculateTotalIps(saved.cidr),
-            utilizationPercent = 0.0
-        )
+
+        return saved.toDtoWithStats()
     }
 
     @Transactional
