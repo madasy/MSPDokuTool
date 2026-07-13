@@ -18,6 +18,8 @@ import com.msp.doku.repository.IpAddressRepository
 import com.msp.doku.repository.RackRepository
 import com.msp.doku.repository.VlanRepository
 import com.msp.doku.repository.VpnTunnelRepository
+import com.msp.doku.repository.PublicIpAssignmentRepository
+import com.msp.doku.repository.PublicIpRangeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -33,6 +35,8 @@ class TenantService(
     private val documentationRepository: DocumentationRepository,
     private val vlanRepository: VlanRepository,
     private val vpnTunnelRepository: VpnTunnelRepository,
+    private val publicIpAssignmentRepository: PublicIpAssignmentRepository,
+    private val publicIpRangeRepository: PublicIpRangeRepository,
     private val entityDocService: EntityDocService
 ) {
 
@@ -67,6 +71,9 @@ class TenantService(
         if (subnetRepository.existsByAssignedTenantId(id)) blockers.add("Subnetze")
         if (deviceRepository.existsByAssignedTenantId(id)) blockers.add("Geräte")
         if (vpnTunnelRepository.existsByTenantId(id)) blockers.add("VPN-Tunnel")
+        if (publicIpAssignmentRepository.existsByAssignedTenantId(id) || publicIpRangeRepository.existsByAssignedTenantId(id)) {
+            blockers.add("Öffentliche IPs")
+        }
         if (blockers.isNotEmpty()) {
             throw IllegalStateException(
                 "Tenant kann nicht gelöscht werden – zugewiesene Ressourcen: ${blockers.joinToString(", ")}"

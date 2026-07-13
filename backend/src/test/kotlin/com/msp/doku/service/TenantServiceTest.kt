@@ -11,6 +11,8 @@ import com.msp.doku.repository.SubnetRepository
 import com.msp.doku.repository.TenantRepository
 import com.msp.doku.repository.VlanRepository
 import com.msp.doku.repository.VpnTunnelRepository
+import com.msp.doku.repository.PublicIpAssignmentRepository
+import com.msp.doku.repository.PublicIpRangeRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -33,12 +35,16 @@ class TenantServiceTest {
     private val documentationRepository: DocumentationRepository = mock()
     private val vlanRepository: VlanRepository = mock()
     private val vpnTunnelRepository: VpnTunnelRepository = mock()
+    private val publicIpAssignmentRepository: PublicIpAssignmentRepository = mock()
+    private val publicIpRangeRepository: PublicIpRangeRepository = mock()
     private val entityDocService: EntityDocService = mock()
 
     private val service = TenantService(
         tenantRepository, deviceRepository, subnetRepository,
         ipAddressRepository, rackRepository, documentationRepository,
-        vlanRepository, vpnTunnelRepository, entityDocService
+        vlanRepository, vpnTunnelRepository,
+        publicIpAssignmentRepository, publicIpRangeRepository,
+        entityDocService
     )
 
     @Test
@@ -74,11 +80,32 @@ class TenantServiceTest {
         whenever(subnetRepository.existsByAssignedTenantId(id)).thenReturn(false)
         whenever(deviceRepository.existsByAssignedTenantId(id)).thenReturn(false)
         whenever(vpnTunnelRepository.existsByTenantId(id)).thenReturn(true)
+        whenever(publicIpAssignmentRepository.existsByAssignedTenantId(id)).thenReturn(false)
+        whenever(publicIpRangeRepository.existsByAssignedTenantId(id)).thenReturn(false)
 
         val ex = assertThrows<IllegalStateException> { service.deleteTenant(id) }
 
         assertTrue(ex.message!!.contains("VLANs"))
         assertTrue(ex.message!!.contains("VPN-Tunnel"))
+        verify(tenantRepository, never()).delete(any<Tenant>())
+    }
+
+    @Test
+    fun `deleteTenant is blocked by assigned public IPs`() {
+        val id = UUID.randomUUID()
+        whenever(tenantRepository.findById(id)).thenReturn(
+            Optional.of(Tenant(name = "Kunde", identifier = "kunde").apply { this.id = id })
+        )
+        whenever(vlanRepository.existsByAssignedTenantId(id)).thenReturn(false)
+        whenever(subnetRepository.existsByAssignedTenantId(id)).thenReturn(false)
+        whenever(deviceRepository.existsByAssignedTenantId(id)).thenReturn(false)
+        whenever(vpnTunnelRepository.existsByTenantId(id)).thenReturn(false)
+        whenever(publicIpAssignmentRepository.existsByAssignedTenantId(id)).thenReturn(true)
+        whenever(publicIpRangeRepository.existsByAssignedTenantId(id)).thenReturn(false)
+
+        val ex = assertThrows<IllegalStateException> { service.deleteTenant(id) }
+
+        assertTrue(ex.message!!.contains("Öffentliche IPs"))
         verify(tenantRepository, never()).delete(any<Tenant>())
     }
 
@@ -91,6 +118,8 @@ class TenantServiceTest {
         whenever(subnetRepository.existsByAssignedTenantId(id)).thenReturn(false)
         whenever(deviceRepository.existsByAssignedTenantId(id)).thenReturn(false)
         whenever(vpnTunnelRepository.existsByTenantId(id)).thenReturn(false)
+        whenever(publicIpAssignmentRepository.existsByAssignedTenantId(id)).thenReturn(false)
+        whenever(publicIpRangeRepository.existsByAssignedTenantId(id)).thenReturn(false)
 
         service.deleteTenant(id)
 

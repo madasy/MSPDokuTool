@@ -100,13 +100,15 @@ class PublicIpRangeService(
         request.status?.let { assignment.status = it }
         request.description?.let { assignment.description = it }
         if (request.assignedTenantId != null) {
-            assignment.assignedTenant = tenantRepository.findById(request.assignedTenantId).orElse(null)
+            assignment.assignedTenant = tenantRepository.findById(request.assignedTenantId)
+                .orElseThrow { IllegalArgumentException("Tenant not found") }
         }
         if (request.clearAssignedTenant) {
             assignment.assignedTenant = null
         }
         if (request.assignedDeviceId != null) {
-            assignment.assignedDevice = deviceRepository.findById(request.assignedDeviceId).orElse(null)
+            assignment.assignedDevice = deviceRepository.findById(request.assignedDeviceId)
+                .orElseThrow { IllegalArgumentException("Device not found") }
         }
 
         return assignmentRepository.save(assignment).toAssignmentDto()
