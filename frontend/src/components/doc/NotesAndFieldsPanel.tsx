@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
 import { Plus, Trash2, X, FileText, Tag } from 'lucide-react';
+import { useToast } from '../ui/Toast';
 import { DocService, type DocEntityType, type FieldType } from '../../services/DocService';
 
 interface Props {
@@ -13,6 +14,7 @@ export default function NotesAndFieldsPanel({ entityType, entityId }: Props) {
     const [showNoteForm, setShowNoteForm] = useState(false);
     const [showFieldForm, setShowFieldForm] = useState(false);
     const queryClient = useQueryClient();
+    const { addToast } = useToast();
 
     const notesQuery = useQuery({
         queryKey: ['notes', entityType, entityId],
@@ -32,14 +34,32 @@ export default function NotesAndFieldsPanel({ entityType, entityId }: Props) {
         mutationFn: (data: { title: string; contentMarkdown: string }) =>
             DocService.createNote({ ...data, entityType, entityId }),
         onSuccess: () => { invalidate(); setShowNoteForm(false); },
+        onError: (err: Error) => {
+            addToast({ type: 'error', title: 'Fehler', message: err.message });
+        },
     });
-    const deleteNote = useMutation({ mutationFn: DocService.deleteNote, onSuccess: invalidate });
+    const deleteNote = useMutation({
+        mutationFn: DocService.deleteNote,
+        onSuccess: invalidate,
+        onError: (err: Error) => {
+            addToast({ type: 'error', title: 'Fehler', message: err.message });
+        },
+    });
     const createField = useMutation({
         mutationFn: (data: { name: string; value: string; fieldType: FieldType }) =>
             DocService.createCustomField({ ...data, entityType, entityId }),
         onSuccess: () => { invalidate(); setShowFieldForm(false); },
+        onError: (err: Error) => {
+            addToast({ type: 'error', title: 'Fehler', message: err.message });
+        },
     });
-    const deleteField = useMutation({ mutationFn: DocService.deleteCustomField, onSuccess: invalidate });
+    const deleteField = useMutation({
+        mutationFn: DocService.deleteCustomField,
+        onSuccess: invalidate,
+        onError: (err: Error) => {
+            addToast({ type: 'error', title: 'Fehler', message: err.message });
+        },
+    });
 
     const notes = notesQuery.data ?? [];
     const fields = fieldsQuery.data ?? [];
