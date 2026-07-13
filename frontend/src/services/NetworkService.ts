@@ -9,6 +9,9 @@ export interface Subnet {
     usedIps: number;
     totalIps: number;
     utilizationPercent: number;
+    isPublic: boolean;
+    assignedTenantId?: string;
+    assignedTenantName?: string;
     // Note: Backend DTO does not include 'ips' list directly in getSubnets.
     // We fetch IPs separately or need to update backend. For now, let's fetch separately in the UI component.
 }
@@ -20,6 +23,8 @@ export interface IpAddress {
     hostname?: string;
     description?: string;
     mac?: string;
+    assignedTenantId?: string;
+    assignedTenantName?: string;
 }
 
 export interface CreateSubnetRequest {
@@ -30,6 +35,7 @@ export interface CreateSubnetRequest {
     vlanTag?: number;
     vlanName?: string;
     tenantId: string;
+    isPublic?: boolean;
 }
 
 export interface CreateIpAddressRequest {
@@ -80,6 +86,8 @@ export const NetworkService = {
         method: 'POST',
         body: JSON.stringify(data),
     }),
+
+    getPublicSubnets: () => apiFetch<Subnet[]>('/network/public-subnets'),
 
     getIps: (subnetId: string) => apiFetch<IpAddress[]>(`/network/subnets/${subnetId}/ips`),
 

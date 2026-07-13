@@ -1,7 +1,10 @@
+export type TenantType = 'MSP' | 'CUSTOMER';
+
 export interface Tenant {
     id: string;
     name: string;
     identifier: string;
+    type: TenantType;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -9,6 +12,7 @@ export interface Tenant {
 export interface CreateTenantRequest {
     name: string;
     identifier: string;
+    type?: TenantType;
 }
 
 const API_BASE_URL = 'http://localhost:8080/api/v1';
@@ -28,6 +32,11 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
         throw new Error(`API Error: ${response.statusText}`);
     }
 
+    // Handle 204 No Content
+    if (response.status === 204) {
+        return {} as T;
+    }
+
     return response.json();
 }
 
@@ -37,4 +46,5 @@ export const TenantService = {
         method: 'POST',
         body: JSON.stringify(data),
     }),
+    delete: (id: string) => apiFetch<void>(`/tenants/${id}`, { method: 'DELETE' }),
 };
