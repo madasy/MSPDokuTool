@@ -32,7 +32,7 @@ export interface IpAssignment {
 }
 
 export interface UpdateAssignmentRequest {
-    assignedTenantId?: string;
+    assignedTenantId?: string | null;
     assignedDeviceId?: string;
     description?: string;
     status?: string;
