@@ -1,5 +1,6 @@
 package com.msp.doku.service
 
+import com.msp.doku.domain.DocEntityType
 import com.msp.doku.domain.IpAddress
 import com.msp.doku.domain.Subnet
 import com.msp.doku.domain.Vlan
@@ -21,7 +22,8 @@ class NetworkService(
     private val subnetRepository: SubnetRepository,
     private val ipAddressRepository: IpAddressRepository,
     private val tenantRepository: TenantRepository,
-    private val vlanRepository: VlanRepository
+    private val vlanRepository: VlanRepository,
+    private val entityDocService: EntityDocService
 ) {
 
     fun getSubnetsForTenant(tenantId: UUID): List<SubnetDto> {
@@ -129,6 +131,7 @@ class NetworkService(
         if (!ipAddressRepository.existsById(id)) {
             throw IllegalArgumentException("IP Address not found")
         }
+        entityDocService.deleteAllForEntity(DocEntityType.IP_ADDRESS, id)
         ipAddressRepository.deleteById(id)
     }
 

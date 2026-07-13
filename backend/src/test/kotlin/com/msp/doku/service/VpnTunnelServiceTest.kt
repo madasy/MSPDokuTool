@@ -30,8 +30,11 @@ class VpnTunnelServiceTest {
     private val tenantRepository: TenantRepository = mock()
     private val deviceRepository: DeviceRepository = mock()
     private val subnetRepository: SubnetRepository = mock()
+    private val entityDocService: EntityDocService = mock()
 
-    private val service = VpnTunnelService(vpnTunnelRepository, tenantRepository, deviceRepository, subnetRepository)
+    private val service = VpnTunnelService(
+        vpnTunnelRepository, tenantRepository, deviceRepository, subnetRepository, entityDocService
+    )
 
     private val customer = Tenant(name = "Kunde", identifier = "kunde").apply { id = UUID.randomUUID() }
     private val firewall = Device(name = "DC-FW-01", deviceType = DeviceType.FIREWALL)
@@ -90,6 +93,7 @@ class VpnTunnelServiceTest {
 
         service.deleteTunnel(id)
 
+        verify(entityDocService).deleteAllForEntity(com.msp.doku.domain.DocEntityType.VPN_TUNNEL, id)
         verify(vpnTunnelRepository).deleteById(id)
     }
 }

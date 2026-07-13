@@ -33,11 +33,12 @@ class TenantServiceTest {
     private val documentationRepository: DocumentationRepository = mock()
     private val vlanRepository: VlanRepository = mock()
     private val vpnTunnelRepository: VpnTunnelRepository = mock()
+    private val entityDocService: EntityDocService = mock()
 
     private val service = TenantService(
         tenantRepository, deviceRepository, subnetRepository,
         ipAddressRepository, rackRepository, documentationRepository,
-        vlanRepository, vpnTunnelRepository
+        vlanRepository, vpnTunnelRepository, entityDocService
     )
 
     @Test
@@ -93,6 +94,7 @@ class TenantServiceTest {
 
         service.deleteTenant(id)
 
+        verify(entityDocService).deleteAllForEntity(com.msp.doku.domain.DocEntityType.TENANT, id)
         verify(tenantRepository).delete(tenant)
     }
 }
