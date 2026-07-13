@@ -7,6 +7,7 @@ import com.msp.doku.dto.TenantHealthDto
 import com.msp.doku.dto.TenantSummaryDto
 import com.msp.doku.service.TenantService
 import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -47,5 +48,11 @@ class TenantController(
     @GetMapping("/{id}/health")
     fun getTenantHealth(@PathVariable id: UUID): TenantHealthDto {
         return tenantService.getHealth(id)
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun deleteTenant(@PathVariable id: UUID) {
+        tenantService.deleteTenant(id)
     }
 }

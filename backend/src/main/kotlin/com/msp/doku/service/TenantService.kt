@@ -1,6 +1,7 @@
 package com.msp.doku.service
 
 import com.msp.doku.domain.Tenant
+import com.msp.doku.domain.TenantType
 import com.msp.doku.dto.ActionItemDto
 import com.msp.doku.dto.CategoryScoreDto
 import com.msp.doku.dto.CreateTenantRequest
@@ -14,6 +15,8 @@ import com.msp.doku.repository.DeviceRepository
 import com.msp.doku.repository.SubnetRepository
 import com.msp.doku.repository.IpAddressRepository
 import com.msp.doku.repository.RackRepository
+import com.msp.doku.repository.VlanRepository
+import com.msp.doku.repository.VpnTunnelRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -26,7 +29,9 @@ class TenantService(
     private val subnetRepository: SubnetRepository,
     private val ipAddressRepository: IpAddressRepository,
     private val rackRepository: RackRepository,
-    private val documentationRepository: DocumentationRepository
+    private val documentationRepository: DocumentationRepository,
+    private val vlanRepository: VlanRepository,
+    private val vpnTunnelRepository: VpnTunnelRepository
 ) {
 
     fun getAllTenants(): List<TenantDto> {
@@ -38,12 +43,34 @@ class TenantService(
         if (tenantRepository.findByIdentifier(request.identifier) != null) {
             throw IllegalArgumentException("Tenant with identifier '${request.identifier}' already exists")
         }
+        if (request.type == TenantType.MSP && tenantRepository.existsByType(TenantType.MSP)) {
+            throw IllegalArgumentException("Es existiert bereits ein MSP-Tenant")
+        }
 
         val tenant = Tenant(
             name = request.name,
-            identifier = request.identifier
+            identifier = request.identifier,
+            type = request.type
         )
         return tenantRepository.save(tenant).toDto()
+    }
+
+    @Transactional
+    fun deleteTenant(id: UUID) {
+        val tenant = tenantRepository.findById(id)
+            .orElseThrow { IllegalArgumentException("Tenant not found") }
+
+        val blockers = mutableListOf<String>()
+        if (vlanRepository.existsByAssignedTenantId(id)) blockers.add("VLANs")
+        if (subnetRepository.existsByAssignedTenantId(id)) blockers.add("Subnetze")
+        if (deviceRepository.existsByAssignedTenantId(id)) blockers.add("Geräte")
+        if (vpnTunnelRepository.existsByTenantId(id)) blockers.add("VPN-Tunnel")
+        if (blockers.isNotEmpty()) {
+            throw IllegalStateException(
+                "Tenant kann nicht gelöscht werden – zugewiesene Ressourcen: ${blockers.joinToString(", ")}"
+            )
+        }
+        tenantRepository.delete(tenant)
     }
 
     fun getSummary(tenantId: UUID): TenantSummaryDto {
@@ -216,6 +243,7 @@ class TenantService(
         id = this.id!!,
         name = this.name,
         identifier = this.identifier,
+        type = this.type,
         createdAt = this.createdAt,
         updatedAt = this.updatedAt,
         profile = this.profile,
