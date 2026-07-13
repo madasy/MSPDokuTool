@@ -38,6 +38,10 @@ export default function TenantListPage() {
         );
     }
 
+    const sortedTenants = [...(tenants ?? [])].sort((a, b) =>
+        a.type === b.type ? a.name.localeCompare(b.name) : a.type === 'MSP' ? -1 : 1
+    );
+
     return (
         <div className="page">
             <div className="flex items-center justify-between mb-6">
@@ -55,7 +59,7 @@ export default function TenantListPage() {
             </div>
 
             {/* Tenant Cards */}
-            {tenants?.length === 0 ? (
+            {sortedTenants.length === 0 ? (
                 <div className="card p-12 text-center">
                     <Users size={32} className="mx-auto text-slate-300 mb-3" />
                     <p className="text-sm text-slate-500 mb-4">Noch keine Tenants vorhanden.</p>
@@ -68,7 +72,7 @@ export default function TenantListPage() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {tenants?.map(tenant => (
+                    {sortedTenants.map(tenant => (
                         <Link
                             key={tenant.id}
                             to={`/tenants/${tenant.id}`}
@@ -78,7 +82,14 @@ export default function TenantListPage() {
                                 <div className="h-10 w-10 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center font-bold text-sm">
                                     {tenant.name.substring(0, 2).toUpperCase()}
                                 </div>
-                                <ArrowRight size={14} className="text-slate-300 group-hover:text-primary-500 transition-colors mt-1" />
+                                <div className="flex items-center gap-2">
+                                    {tenant.type === 'MSP' && (
+                                        <span className="text-[10px] font-bold uppercase tracking-wide bg-primary-600 text-white px-2 py-0.5 rounded-full">
+                                            MSP
+                                        </span>
+                                    )}
+                                    <ArrowRight size={14} className="text-slate-300 group-hover:text-primary-500 transition-colors mt-1" />
+                                </div>
                             </div>
                             <h3 className="font-semibold text-slate-800">{tenant.name}</h3>
                             <p className="text-xs text-slate-400 font-mono mt-0.5">{tenant.identifier}</p>
@@ -108,6 +119,7 @@ export default function TenantListPage() {
                             createMutation.mutate({
                                 name: formData.get('name') as string,
                                 identifier: formData.get('identifier') as string,
+                                type: formData.get('isMsp') ? 'MSP' : 'CUSTOMER',
                             });
                         }}>
                             <div className="space-y-4">
@@ -129,6 +141,10 @@ export default function TenantListPage() {
                                         className="input font-mono"
                                     />
                                 </div>
+                                <label className="flex items-center gap-2 text-xs text-slate-600">
+                                    <input type="checkbox" name="isMsp" className="rounded" />
+                                    Das ist unsere eigene MSP-Dokumentation
+                                </label>
                             </div>
                             <div className="mt-6 flex justify-end gap-3">
                                 <button
