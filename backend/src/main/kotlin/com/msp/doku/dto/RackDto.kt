@@ -21,15 +21,26 @@ data class DeviceDto(
     val id: UUID,
     val name: String,
     val deviceType: DeviceType,
+    val model: String?,
+    val serial: String?,
+    val ip: String?,
+    val mac: String?,
     val positionU: Int?,
     val heightU: Int,
-    val status: DeviceStatus
+    val status: DeviceStatus,
+    val rackId: UUID?,
+    val rackName: String?
 )
 
 data class CreateDeviceRequest(
     val name: String,
     val deviceType: DeviceType,
+    val model: String? = null,
+    val serial: String? = null,
+    val ip: String? = null,
+    val mac: String? = null,
     val heightU: Int = 1,
     val positionU: Int? = null, // Can be null if not yet placed
-    val rackId: UUID? = null
+    val rackId: UUID? = null,
+    val status: DeviceStatus = DeviceStatus.ACTIVE
 )

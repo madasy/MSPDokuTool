@@ -87,7 +87,7 @@ export default function SwitchFaceplate() {
             </div>
 
             {/* The Faceplate */}
-            <div className="card p-6 bg-slate-800 rounded-xl overflow-hidden">
+            <div className="card p-6 bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden shadow-inner">
                 {/* Top Row */}
                 <div className="flex gap-1 mb-1 justify-center flex-wrap">
                     {topRow.map(port => (

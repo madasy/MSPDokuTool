@@ -28,6 +28,12 @@ class Device(
     @Column(name = "serial_number")
     var serialNumber: String? = null,
 
+    @Column(name = "management_ip")
+    var managementIp: String? = null,
+
+    @Column(name = "mac_address")
+    var macAddress: String? = null,
+
     @Enumerated(EnumType.STRING)
     @Column(name = "device_type", nullable = false)
     var deviceType: DeviceType,

@@ -29,7 +29,7 @@ export default function Layout() {
     useEffect(() => { setMobileMenuOpen(false); }, [location.pathname]);
 
     return (
-        <div className="flex h-screen font-sans overflow-hidden bg-slate-50">
+        <div className="flex h-screen font-sans overflow-hidden bg-white dark:bg-slate-900">
             {/* Command Palette */}
             <CommandPalette />
 
@@ -40,20 +40,20 @@ export default function Layout() {
 
             {/* Sidebar (Left Menu) */}
             <aside className={cn(
-                'w-64 min-w-[256px] bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 z-40 border-r border-white/10 shadow-xl',
-                'fixed inset-y-0 left-0 transition-transform duration-300 lg:relative lg:translate-x-0',
-                mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+                'w-64 min-w-[256px] bg-white/80 dark:bg-slate-900 backdrop-blur-xl text-slate-700 dark:text-slate-300 flex flex-col flex-shrink-0 z-40 border-r border-slate-200/60 dark:border-white/5 shadow-[10px_0_30px_-15px_rgba(15,23,42,0.1)] dark:shadow-[10px_0_40px_-30px_rgba(0,0,0,0.5)] transition-all duration-300',
+                !mobileMenuOpen && 'hidden lg:flex',
+                mobileMenuOpen && 'fixed inset-y-0 left-0 h-full'
             )}>
                 {/* Logo */}
                 <div
-                    className="h-16 flex items-center px-6 border-b border-white/10 cursor-pointer hover:bg-white/5 transition-colors"
+                    className="h-16 flex items-center px-6 border-b border-slate-200 dark:border-white/5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
                     onClick={() => navigate('/')}
                 >
-                    <div className="font-semibold text-white text-lg tracking-tight flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 shadow-[0_0_20px_rgba(20,184,166,0.3)]" />
+                    <div className="font-semibold text-slate-900 text-lg tracking-tight flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 shadow-[0_0_20px_rgba(20,184,166,0.2)]" />
                         <div className="flex flex-col leading-tight">
                             <span>Doku</span>
-                            <span className="text-[10px] uppercase tracking-[0.2em] text-white/40">MSP Suite</span>
+                            <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400">MSP Suite</span>
                         </div>
                     </div>
                 </div>
@@ -61,12 +61,12 @@ export default function Layout() {
                 {/* Search / CMD+K */}
                 <div className="px-4 pt-6 pb-2">
                     <button
-                        className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-slate-400 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-all shadow-sm group"
+                        className="search-pill shadow-sm group dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400"
                         onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
                     >
-                        <Search size={14} className="group-hover:text-white transition-colors" />
-                        <span className="flex-1 text-left group-hover:text-slate-200 transition-colors">Suche...</span>
-                        <kbd className="text-[10px] bg-white/10 text-white/50 px-1.5 py-0.5 rounded-lg group-hover:text-white/80 transition-colors">⌘K</kbd>
+                        <Search size={14} className="group-hover:text-slate-900 transition-colors" />
+                        <span className="flex-1 text-left group-hover:text-slate-700 transition-colors">Suche...</span>
+                        <kbd className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-lg">⌘K</kbd>
                     </button>
                 </div>
 
@@ -99,7 +99,7 @@ export default function Layout() {
                                 </div>
                             </div>
 
-                            <div className="pt-6 mt-2 border-t border-white/10">
+                            <div className="pt-6 mt-2 border-t border-slate-200">
                                 <NavItem to="/tenants" icon={<Users size={18} />} label="Alle Tenants" />
                             </div>
                         </>
@@ -123,8 +123,8 @@ export default function Layout() {
                 </nav>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-white/10">
-                    <button className="flex items-center gap-3 w-full px-3 py-2.5 text-xs text-white/50 hover:text-white transition-colors rounded-xl hover:bg-white/5 font-medium">
+                <div className="p-4 border-t border-slate-200">
+                    <button className="flex items-center gap-3 w-full px-3 py-2.5 text-xs text-slate-500 hover:text-slate-900 transition-colors rounded-xl hover:bg-slate-100 font-medium">
                         <LogOut size={16} />
                         <span>Abmelden</span>
                     </button>
@@ -132,10 +132,10 @@ export default function Layout() {
             </aside>
 
             {/* Main Content Wrapper */}
-            <div className="flex-1 flex flex-col min-w-0 h-full bg-slate-50 relative">
+            <div className="flex-1 flex flex-col min-w-0 h-full bg-transparent dark:bg-slate-900 relative">
 
                 {/* Header with Tenant Switcher (Top Right) */}
-                <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-4 lg:px-8 shadow-sm flex-shrink-0 z-10 sticky top-0">
+                <header className="h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/60 dark:border-white/5 flex items-center justify-between px-4 lg:px-8 shadow-sm flex-shrink-0 z-10 sticky top-0">
                     {/* Left: Hamburger + Breadcrumbs */}
                     <div className="flex items-center gap-3">
                         <button
@@ -165,7 +165,7 @@ export default function Layout() {
                                 AM
                             </div>
                             <div className="hidden md:block text-xs text-left">
-                                <p className="font-semibold text-slate-700">Anish M.</p>
+                                <p className="font-semibold text-slate-700 dark:text-slate-200">Anish M.</p>
                                 <p className="text-slate-400 font-medium text-[10px]">Admin</p>
                             </div>
                         </div>
@@ -334,7 +334,7 @@ function FavoritesSidebar() {
         <div>
             <SectionHeader icon={<Star size={12} />} label="Favoriten" />
             {favorites.length === 0 ? (
-                <div className="px-3 py-3 text-[11px] text-white/30 italic">
+                <div className="px-3 py-3 text-[11px] text-slate-400 italic">
                     Keine Favoriten gepinnt
                 </div>
             ) : (
@@ -343,14 +343,14 @@ function FavoritesSidebar() {
                         <div key={fav.id} className="group flex items-center">
                             <button
                                 onClick={() => navigate(fav.path)}
-                                className="flex-1 flex items-center gap-2 px-3 py-2 text-xs text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors truncate"
+                                className="flex-1 flex items-center gap-2 px-3 py-2 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors truncate"
                             >
                                 <Star size={12} className="text-amber-400 flex-shrink-0" />
                                 <span className="truncate">{fav.label}</span>
                             </button>
                             <button
                                 onClick={() => removeFavorite(fav.id)}
-                                className="opacity-0 group-hover:opacity-100 p-1 mr-2 text-white/30 hover:text-white/60 transition-all"
+                                className="opacity-0 group-hover:opacity-100 p-1 mr-2 text-slate-400 hover:text-slate-600 transition-all"
                                 title="Entfernen"
                             >
                                 <StarOff size={12} />
@@ -365,7 +365,7 @@ function FavoritesSidebar() {
 
 function SectionHeader({ label, icon }: { label: string; icon?: React.ReactNode }) {
     return (
-        <div className="flex items-center gap-1.5 px-3 pt-1 pb-1 text-[10px] font-semibold text-white/40 uppercase tracking-[0.2em]">
+        <div className="flex items-center gap-1.5 px-3 pt-1 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-[0.2em]">
             {icon}
             {label}
         </div>
@@ -381,19 +381,19 @@ function NavItem({ to, icon, label, end }: { to: string; icon: React.ReactNode; 
                 cn(
                     'flex items-center gap-3 px-3 py-2 text-[13px] font-medium transition-all rounded-xl group relative',
                     isActive
-                        ? 'bg-gradient-to-r from-primary-500/20 to-primary-500/5 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]'
-                        : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+                        ? 'bg-primary-50 text-slate-900 border border-primary-200 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 )
             }
         >
             {({ isActive }) => (
                 <>
-                    <span className={cn("transition-colors", isActive ? "text-primary-300" : "text-slate-400 group-hover:text-slate-200")}>
+                    <span className={cn("transition-colors", isActive ? "text-primary-600" : "text-slate-400 group-hover:text-slate-600")}>
                         {icon}
                     </span>
                     <span>{label}</span>
                     {isActive && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-primary-400 rounded-r-full shadow-[0_0_10px_rgba(45,212,191,0.5)]"></div>
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-primary-400 rounded-r-full shadow-[0_0_10px_rgba(45,212,191,0.3)]"></div>
                     )}
                 </>
             )}

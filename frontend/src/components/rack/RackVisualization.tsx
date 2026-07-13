@@ -66,15 +66,15 @@ export default function RackVisualization({ rack, onDeviceClick }: RackVisualiza
             onDragStart={(e) => setActiveId(e.active.id as string)}
             onDragEnd={handleDragEnd}
         >
-            <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 w-full max-w-sm select-none shadow-2xl relative">
+            <div className="bg-white/60 dark:bg-slate-800 backdrop-blur-sm p-4 rounded-xl border border-slate-200/60 dark:border-slate-700 w-full max-w-sm select-none shadow-xl dark:shadow-2xl relative transition-colors">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-3 px-1">
-                    <span className="text-white font-semibold text-sm">{rack.name}</span>
-                    <span className="text-slate-400 text-xs bg-slate-700/50 px-2 py-0.5 rounded-full">{rack.heightUnits}U</span>
+                    <span className="text-slate-900 dark:text-white font-semibold text-sm">{rack.name}</span>
+                    <span className="text-slate-500 dark:text-slate-400 text-xs bg-white/50 dark:bg-slate-700/50 px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-transparent">{rack.heightUnits}U</span>
                 </div>
 
                 {/* Rack Body */}
-                <div className="flex flex-col border-x-[3px] border-slate-600 bg-slate-900/50 relative">
+                <div className="flex flex-col border-x-[3px] border-slate-300/60 dark:border-slate-600 bg-white/40 dark:bg-slate-900/50 relative transition-colors">
                     {units.map((u) => (
                         <RackUnit
                             key={u}
@@ -86,7 +86,7 @@ export default function RackVisualization({ rack, onDeviceClick }: RackVisualiza
                 </div>
 
                 {/* Footer */}
-                <div className="mt-2 text-center text-[10px] text-slate-500">Front View</div>
+                <div className="mt-2 text-center text-[10px] text-slate-400 dark:text-slate-500">Front View</div>
             </div>
 
             {createPortal(
@@ -119,12 +119,12 @@ function RackUnit({ u, occupyingDevice, onDeviceClick }: { u: number; occupyingD
         <div
             ref={setNodeRef}
             className={cn(
-                "flex h-7 border-b border-slate-700/40 last:border-b-0 relative transition-colors",
-                isOver && "bg-primary-400/20"
+                "flex h-7 border-b border-slate-300 dark:border-slate-700/40 last:border-b-0 relative transition-colors",
+                isOver && "bg-primary-100/50 dark:bg-primary-400/20"
             )}
         >
             {/* Unit Number */}
-            <div className="w-6 flex items-center justify-center text-[9px] font-mono text-slate-500 border-r border-slate-700 bg-slate-800/80">
+            <div className="w-6 flex items-center justify-center text-[9px] font-mono text-slate-400 dark:text-slate-500 border-r border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800/80 transition-colors">
                 {u}
             </div>
 
@@ -140,7 +140,7 @@ function RackUnit({ u, occupyingDevice, onDeviceClick }: { u: number; occupyingD
             </div>
 
             {/* Right Rail */}
-            <div className="w-6 border-l border-slate-700 bg-slate-800/80 flex items-center justify-center text-[9px] font-mono text-slate-500">
+            <div className="w-6 border-l border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800/80 flex items-center justify-center text-[9px] font-mono text-slate-400 dark:text-slate-500 transition-colors">
                 {u}
             </div>
         </div>

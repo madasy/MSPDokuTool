@@ -22,7 +22,12 @@ function getSystemTheme(): 'light' | 'dark' {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setThemeState] = useState<Theme>(() => {
-        return (localStorage.getItem('msp-doku-theme') as Theme) || 'light';
+        const stored = localStorage.getItem('msp-doku-theme') as Theme | null;
+        if (stored === 'dark' || stored === 'system') {
+            localStorage.setItem('msp-doku-theme', 'light');
+            return 'light';
+        }
+        return stored || 'light';
     });
 
     const resolved: 'light' | 'dark' = theme === 'system' ? getSystemTheme() : theme;

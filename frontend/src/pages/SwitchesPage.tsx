@@ -138,7 +138,7 @@ export default function SwitchesPage() {
                     </div>
 
                     {/* Faceplate */}
-                    <div className="card p-6 bg-slate-100 dark:bg-slate-900 rounded-xl overflow-hidden">
+                    <div className="card p-6 bg-white/60 dark:bg-slate-900 backdrop-blur-sm rounded-xl overflow-hidden shadow-sm border border-slate-200/60 dark:border-slate-700">
                         <div className="flex gap-1 mb-1 justify-center flex-wrap">
                             {topRow.map(port => (
                                 <PortSlot key={port.number} port={port} onHover={setHoveredPort} onEdit={() => setEditingPort(port.number)} isEditing={editingPort === port.number} />

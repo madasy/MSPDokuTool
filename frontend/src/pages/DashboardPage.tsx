@@ -48,10 +48,10 @@ export default function DashboardPage() {
                             {stat.icon}
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
-                            <p className="text-xs text-slate-500 font-medium mt-0.5">{stat.label}</p>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
+                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mt-0.5">{stat.label}</p>
                         </div>
-                        <ArrowUpRight size={14} className="ml-auto text-slate-300 group-hover:text-primary-500 transition-colors" />
+                        <ArrowUpRight size={14} className="ml-auto text-slate-400 dark:text-slate-500 group-hover:text-primary-500 transition-colors" />
                     </Link>
                 ))}
             </div>
@@ -59,23 +59,23 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Recent Changes */}
                 <div className="lg:col-span-2 card overflow-hidden">
-                    <div className="px-5 py-4 border-b border-white/70 flex items-center justify-between">
-                        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-                            <Clock size={16} className="text-slate-400" />
+                    <div className="px-5 py-4 border-b border-white/70 dark:border-white/10 flex items-center justify-between">
+                        <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                            <Clock size={16} className="text-slate-500 dark:text-slate-400" />
                             Letzte Änderungen
                         </h2>
                     </div>
-                    <div className="divide-y divide-white/70">
+                    <div className="divide-y divide-white/70 dark:divide-white/10">
                         {RECENT_CHANGES.map((change, idx) => (
-                            <div key={idx} className="px-5 py-3 hover:bg-white/70 transition-colors flex items-center gap-4">
+                            <div key={idx} className="px-5 py-3 hover:bg-white/70 dark:hover:bg-white/5 transition-colors flex items-center gap-4">
                                 <div className="w-1.5 h-1.5 rounded-full bg-primary-400 flex-shrink-0" />
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-slate-800 truncate">{change.what}</p>
-                                    <p className="text-xs text-slate-400">{change.tenant}</p>
+                                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{change.what}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">{change.tenant}</p>
                                 </div>
                                 <div className="text-right flex-shrink-0">
-                                    <p className="text-xs text-slate-500">{change.who}</p>
-                                    <p className="text-[11px] text-slate-400">{change.when}</p>
+                                    <p className="text-xs text-slate-600 dark:text-slate-400">{change.who}</p>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-500">{change.when}</p>
                                 </div>
                             </div>
                         ))}
@@ -84,9 +84,9 @@ export default function DashboardPage() {
 
                 {/* Status Ampeln */}
                 <div className="card overflow-hidden">
-                    <div className="px-5 py-4 border-b border-white/70">
-                        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-                            <Activity size={16} className="text-slate-400" />
+                    <div className="px-5 py-4 border-b border-white/70 dark:border-white/10">
+                        <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                            <Activity size={16} className="text-slate-500 dark:text-slate-400" />
                             System Status
                         </h2>
                     </div>
@@ -98,10 +98,10 @@ export default function DashboardPage() {
                                         item.status === 'warning' ? 'bg-amber-500 animate-pulse' :
                                             'bg-red-500'
                                         }`} />
-                                    <span className="text-sm text-slate-700">{item.label}</span>
+                                    <span className="text-sm text-slate-700 dark:text-slate-200">{item.label}</span>
                                 </div>
                                 {item.detail && (
-                                    <span className="text-[11px] text-amber-600 font-medium">{item.detail}</span>
+                                    <span className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">{item.detail}</span>
                                 )}
                             </div>
                         ))}

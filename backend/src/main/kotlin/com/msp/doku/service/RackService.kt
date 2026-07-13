@@ -59,8 +59,13 @@ class RackService(
         val device = Device(
             name = request.name,
             deviceType = request.deviceType,
+            model = request.model,
+            serialNumber = request.serial,
+            managementIp = request.ip,
+            macAddress = request.mac,
             heightU = request.heightU,
             positionU = request.positionU,
+            status = request.status,
             rack = rack
         )
         return deviceRepository.save(device).toDto()
@@ -77,8 +82,14 @@ class RackService(
         id = this.id!!,
         name = this.name,
         deviceType = this.deviceType,
+        model = this.model,
+        serial = this.serialNumber,
+        ip = this.managementIp,
+        mac = this.macAddress,
         positionU = this.positionU,
         heightU = this.heightU,
-        status = this.status
+        status = this.status,
+        rackId = this.rack?.id,
+        rackName = this.rack?.name
     )
 }
