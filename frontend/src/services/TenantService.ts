@@ -4,6 +4,7 @@ export interface Tenant {
     id: string;
     name: string;
     identifier: string;
+    type: 'MSP' | 'CUSTOMER';
     createdAt?: string;
     updatedAt?: string;
     profile?: string;
@@ -14,6 +15,7 @@ export interface Tenant {
 export interface CreateTenantRequest {
     name: string;
     identifier: string;
+    type?: 'MSP' | 'CUSTOMER';
 }
 
 export interface TenantSummary {
@@ -54,4 +56,5 @@ export const TenantService = {
         apiFetch<Tenant>(`/tenants/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     getSummary: (tenantId: string) => apiFetch<TenantSummary>(`/tenants/${tenantId}/summary`),
     getHealth: (tenantId: string) => apiFetch<TenantHealth>(`/tenants/${tenantId}/health`),
+    delete: (id: string) => apiFetch<void>(`/tenants/${id}`, { method: 'DELETE' }),
 };
