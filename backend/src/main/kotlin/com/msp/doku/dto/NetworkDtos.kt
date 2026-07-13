@@ -10,6 +10,8 @@ data class SubnetDto(
     val vlanTag: Int? = null,
     val vlanName: String? = null,
     val gateway: String? = null,
+    val assignedTenantId: UUID? = null,
+    val assignedTenantName: String? = null,
     val usedIps: Int,
     val totalIps: Int,
     val utilizationPercent: Double

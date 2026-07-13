@@ -11,6 +11,8 @@ export interface Subnet {
     usedIps: number;
     totalIps: number;
     utilizationPercent: number;
+    assignedTenantId?: string;
+    assignedTenantName?: string;
 }
 
 export interface IpAddress {

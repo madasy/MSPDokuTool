@@ -28,7 +28,14 @@ export async function apiFetch<T>(endpoint: string, options?: RequestInit): Prom
             window.dispatchEvent(new CustomEvent('auth:unauthorized'));
         }
         const text = await response.text();
-        throw new Error(`API Error: ${response.status} ${response.statusText} - ${text}`);
+        let message = `API Error: ${response.status} ${response.statusText}${text ? ` - ${text}` : ''}`;
+        try {
+            const parsed = JSON.parse(text);
+            if (parsed && typeof parsed.message === 'string' && parsed.message) {
+                message = parsed.message;
+            }
+        } catch { /* not JSON, keep fallback */ }
+        throw new Error(message);
     }
 
     if (response.status === 204) {

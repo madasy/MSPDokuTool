@@ -9,6 +9,8 @@ import java.util.UUID
 @Repository
 interface SubnetRepository : JpaRepository<Subnet, UUID> {
     fun findByTenantId(tenantId: UUID): List<Subnet>
+    fun findByAssignedTenantId(tenantId: UUID): List<Subnet>
+    fun existsByAssignedTenantId(tenantId: UUID): Boolean
 }
 
 @Repository

@@ -5,8 +5,11 @@ import com.msp.doku.dto.TenantDto
 import com.msp.doku.dto.UpdateTenantRequest
 import com.msp.doku.dto.TenantHealthDto
 import com.msp.doku.dto.TenantSummaryDto
+import com.msp.doku.dto.ProvidedResourcesDto
+import com.msp.doku.service.ProvidedResourcesService
 import com.msp.doku.service.TenantService
 import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -20,7 +23,8 @@ import java.util.UUID
 @RestController
 @RequestMapping("/api/v1/tenants")
 class TenantController(
-    private val tenantService: TenantService
+    private val tenantService: TenantService,
+    private val providedResourcesService: ProvidedResourcesService
 ) {
 
     @GetMapping
@@ -47,5 +51,16 @@ class TenantController(
     @GetMapping("/{id}/health")
     fun getTenantHealth(@PathVariable id: UUID): TenantHealthDto {
         return tenantService.getHealth(id)
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun deleteTenant(@PathVariable id: UUID) {
+        tenantService.deleteTenant(id)
+    }
+
+    @GetMapping("/{id}/provided-resources")
+    fun getProvidedResources(@PathVariable id: UUID): ProvidedResourcesDto {
+        return providedResourcesService.getProvidedResources(id)
     }
 }

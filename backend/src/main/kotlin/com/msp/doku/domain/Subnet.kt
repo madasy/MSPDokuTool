@@ -39,6 +39,10 @@ class Subnet(
     @Column(name = "dhcp_end", columnDefinition = "inet")
     var dhcpEnd: String? = null,
 
-    var description: String? = null
+    var description: String? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_tenant_id")
+    var assignedTenant: Tenant? = null
 
 ) : BaseEntity()

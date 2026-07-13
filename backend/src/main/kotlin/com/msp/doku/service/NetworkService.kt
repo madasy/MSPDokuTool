@@ -1,5 +1,6 @@
 package com.msp.doku.service
 
+import com.msp.doku.domain.DocEntityType
 import com.msp.doku.domain.IpAddress
 import com.msp.doku.domain.Subnet
 import com.msp.doku.domain.Vlan
@@ -21,7 +22,8 @@ class NetworkService(
     private val subnetRepository: SubnetRepository,
     private val ipAddressRepository: IpAddressRepository,
     private val tenantRepository: TenantRepository,
-    private val vlanRepository: VlanRepository
+    private val vlanRepository: VlanRepository,
+    private val entityDocService: EntityDocService
 ) {
 
     fun getSubnetsForTenant(tenantId: UUID): List<SubnetDto> {
@@ -37,6 +39,8 @@ class NetworkService(
                 vlanTag = subnet.vlan?.vlanId,
                 vlanName = subnet.vlan?.name ?: (subnet.vlan?.vlanId?.toString()),
                 gateway = subnet.gateway,
+                assignedTenantId = subnet.assignedTenant?.id,
+                assignedTenantName = subnet.assignedTenant?.name,
                 usedIps = usedIps,
                 totalIps = totalIps,
                 utilizationPercent = if (totalIps > 0) (usedIps.toDouble() / totalIps) * 100 else 0.0
@@ -85,6 +89,8 @@ class NetworkService(
             id = saved.id!!,
             cidr = saved.cidr,
             description = saved.description,
+            assignedTenantId = saved.assignedTenant?.id,
+            assignedTenantName = saved.assignedTenant?.name,
             usedIps = 0,
             totalIps = calculateTotalIps(saved.cidr),
             utilizationPercent = 0.0
@@ -125,6 +131,7 @@ class NetworkService(
         if (!ipAddressRepository.existsById(id)) {
             throw IllegalArgumentException("IP Address not found")
         }
+        entityDocService.deleteAllForEntity(DocEntityType.IP_ADDRESS, id)
         ipAddressRepository.deleteById(id)
     }
 

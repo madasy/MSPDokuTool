@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DatacenterService, type PublicIpRange, type IpAssignment, type UpdateAssignmentRequest } from '../services/DatacenterService';
+import { TenantService } from '../services/TenantService';
 import { cn } from '../lib/utils';
 import { Globe, ChevronRight, Plus, Loader2, Trash2, X } from 'lucide-react';
 import { useToast } from '../components/ui/Toast';
@@ -44,6 +45,7 @@ export default function DatacenterPage() {
             setSelectedRange(null);
             addToast({ type: 'success', title: 'IP Range gelöscht' });
         },
+        onError: (err: Error) => addToast({ type: 'error', title: 'Fehler', message: err.message }),
     });
 
     const createMutation = useMutation({
@@ -53,6 +55,7 @@ export default function DatacenterPage() {
             setShowCreateModal(false);
             addToast({ type: 'success', title: 'IP Range erstellt' });
         },
+        onError: (err: Error) => addToast({ type: 'error', title: 'Fehler', message: err.message }),
     });
 
     const generateMutation = useMutation({
@@ -61,6 +64,7 @@ export default function DatacenterPage() {
             queryClient.invalidateQueries({ queryKey: ['datacenter', 'assignments', active?.id] });
             addToast({ type: 'success', title: 'IPs generiert' });
         },
+        onError: (err: Error) => addToast({ type: 'error', title: 'Fehler', message: err.message }),
     });
 
     const updateAssignmentMutation = useMutation({
@@ -71,6 +75,7 @@ export default function DatacenterPage() {
             setEditingIp(null);
             addToast({ type: 'success', title: 'IP aktualisiert' });
         },
+        onError: (err: Error) => addToast({ type: 'error', title: 'Fehler', message: err.message }),
     });
 
     const freeCount = assignments?.filter(a => a.status === 'free').length ?? 0;
@@ -320,6 +325,13 @@ function EditIpModal({ assignment, onClose, onSubmit, isSubmitting }: {
 }) {
     const [status, setStatus] = useState(assignment.status);
     const [description, setDescription] = useState(assignment.description ?? '');
+    const [assignedTenantId, setAssignedTenantId] = useState(assignment.assignedTenantId ?? '');
+
+    const { data: tenants } = useQuery({
+        queryKey: ['tenants'],
+        queryFn: TenantService.getAll,
+    });
+    const customerTenants = tenants?.filter(t => t.type === 'CUSTOMER') ?? [];
 
     return (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
@@ -346,16 +358,24 @@ function EditIpModal({ assignment, onClose, onSubmit, isSubmitting }: {
                             onChange={e => setDescription(e.target.value)}
                         />
                     </div>
-                    {assignment.assignedTenantName && (
-                        <div className="text-xs text-slate-500">
-                            Tenant: <strong>{assignment.assignedTenantName}</strong>
-                        </div>
-                    )}
+                    <div>
+                        <label className="text-xs font-semibold text-slate-600 mb-1 block">Kunde</label>
+                        <select
+                            className="input"
+                            value={assignedTenantId}
+                            onChange={e => setAssignedTenantId(e.target.value)}
+                        >
+                            <option value="">— nicht zugewiesen —</option>
+                            {customerTenants.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
                 <div className="flex justify-end gap-2 mt-6">
                     <button onClick={onClose} className="btn-secondary text-xs">Abbrechen</button>
                     <button
-                        onClick={() => onSubmit({ status, description: description || undefined })}
+                        onClick={() => onSubmit({ status, description: description || undefined, assignedTenantId: assignedTenantId || undefined, clearAssignedTenant: !assignedTenantId })}
                         disabled={isSubmitting}
                         className="btn-primary text-xs"
                     >

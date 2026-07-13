@@ -11,4 +11,6 @@ interface VlanRepository : JpaRepository<Vlan, UUID> {
     fun findByTenantId(tenantId: UUID): List<Vlan>
     fun findByTenantIdAndVlanId(tenantId: UUID, vlanId: Int): Optional<Vlan>
     fun findByTenantAndVlanId(tenant: com.msp.doku.domain.Tenant, vlanId: Int): Optional<Vlan>
+    fun findByAssignedTenantId(tenantId: UUID): List<Vlan>
+    fun existsByAssignedTenantId(tenantId: UUID): Boolean
 }

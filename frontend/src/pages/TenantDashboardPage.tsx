@@ -8,6 +8,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TenantService, type Tenant, type CategoryScore, type ActionItem } from '../services/TenantService';
 import { DashboardService, type ActivityEntry } from '../services/DashboardService';
 import { useAuth } from '../auth/AuthProvider';
+import ProvidedByMspPanel from '../components/tenant/ProvidedByMspPanel';
+import NotesAndFieldsPanel from '../components/doc/NotesAndFieldsPanel';
 
 // ─── Profile Labels ──────────────────────────────────────────────────────────
 
@@ -267,6 +269,8 @@ export default function TenantDashboardPage() {
                 </div>
             )}
 
+            {tenantId && <ProvidedByMspPanel tenantId={tenantId} />}
+
             {/* ── Schnellzugriff ── */}
             <div>
                 <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 uppercase tracking-wide">
@@ -322,6 +326,8 @@ export default function TenantDashboardPage() {
                     </div>
                 )}
             </div>
+
+            {tenantId && <NotesAndFieldsPanel entityType="TENANT" entityId={tenantId} />}
 
         </div>
     );

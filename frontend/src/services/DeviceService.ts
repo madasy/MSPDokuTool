@@ -16,6 +16,8 @@ export interface Device {
     heightU: number;
     rj45Ports?: number;
     sfpPorts?: number;
+    assignedTenantId?: string;
+    assignedTenantName?: string;
 }
 
 export type CreateDeviceRequest = Omit<Device, 'id' | 'rackName'>;

@@ -6,4 +6,7 @@ import org.springframework.stereotype.Repository
 import java.util.UUID
 
 @Repository
-interface PublicIpRangeRepository : JpaRepository<PublicIpRange, UUID>
+interface PublicIpRangeRepository : JpaRepository<PublicIpRange, UUID> {
+    fun findByAssignedTenantId(tenantId: UUID): List<PublicIpRange>
+    fun existsByAssignedTenantId(tenantId: UUID): Boolean
+}
