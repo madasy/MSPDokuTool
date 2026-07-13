@@ -2,6 +2,7 @@ package com.msp.doku.repository
 
 import com.msp.doku.domain.GroupRoleMapping
 import com.msp.doku.domain.Tenant
+import com.msp.doku.domain.TenantType
 import com.msp.doku.domain.User
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
@@ -10,6 +11,7 @@ import java.util.UUID
 @Repository
 interface TenantRepository : JpaRepository<Tenant, UUID> {
     fun findByIdentifier(identifier: String): Tenant?
+    fun existsByType(type: TenantType): Boolean
 }
 
 @Repository
