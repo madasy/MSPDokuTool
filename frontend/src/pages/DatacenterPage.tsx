@@ -1,179 +1,232 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cn } from '../lib/utils';
-import { Globe, ChevronRight, Plus } from 'lucide-react';
+import { Globe, ChevronRight, Loader2, X } from 'lucide-react';
+import { NetworkService, type Subnet, type IpAddress } from '../services/NetworkService';
+import { ProviderService } from '../services/ProviderService';
+import { TenantService } from '../services/TenantService';
 
-// Mock Data: Public IP Ranges
-const MOCK_RANGES = [
-    {
-        id: 'r1',
-        cidr: '203.0.113.0/24',
-        description: 'Primary Public Block',
-        ips: Array.from({ length: 256 }, (_, i) => ({
-            address: `203.0.113.${i}`,
-            status: i === 0 ? 'network' as const :
-                i === 255 ? 'broadcast' as const :
-                    i >= 1 && i <= 3 ? 'reserved' as const :
-                        i >= 10 && i <= 15 ? 'used' as const :
-                            i >= 20 && i <= 22 ? 'used' as const :
-                                i === 50 ? 'reserved' as const :
-                                    'free' as const,
-            tenant: i >= 10 && i <= 15 ? 'Kanzlei Müller' :
-                i >= 20 && i <= 22 ? 'Acme GmbH' : undefined,
-            usage: i === 10 ? 'Firewall WAN1' :
-                i === 11 ? 'Mail Gateway' :
-                    i === 20 ? 'Web Server' : undefined,
-        })),
-    },
-    {
-        id: 'r2',
-        cidr: '198.51.100.0/28',
-        description: 'Secondary Block (klein)',
-        ips: Array.from({ length: 16 }, (_, i) => ({
-            address: `198.51.100.${i}`,
-            status: i === 0 ? 'network' as const :
-                i === 15 ? 'broadcast' as const :
-                    i >= 1 && i <= 3 ? 'used' as const :
-                        'free' as const,
-            tenant: i >= 1 && i <= 3 ? 'Logistik AG' : undefined,
-            usage: i === 1 ? 'VPN Gateway' : undefined,
-        })),
-    },
-];
+type SlotStatus = 'free' | 'used' | 'reserved' | 'network' | 'broadcast';
 
-type IpStatus = 'free' | 'used' | 'reserved' | 'network' | 'broadcast';
-
-interface IpEntry {
+interface IpSlot {
     address: string;
-    status: IpStatus;
-    tenant?: string;
-    usage?: string;
+    status: SlotStatus;
+    record?: IpAddress;
 }
 
-export default function DatacenterPage() {
-    const [selectedRange, setSelectedRange] = useState(MOCK_RANGES[0]);
-    const [hoveredIp, setHoveredIp] = useState<IpEntry | null>(null);
+function ipToInt(ip: string): number {
+    return ip.split('.').reduce((acc, o) => acc * 256 + parseInt(o, 10), 0) >>> 0;
+}
 
-    const usedCount = selectedRange.ips.filter(ip => ip.status === 'used').length;
-    const reservedCount = selectedRange.ips.filter(ip => ip.status === 'reserved').length;
-    const freeCount = selectedRange.ips.filter(ip => ip.status === 'free').length;
+function intToIp(n: number): string {
+    return [24, 16, 8, 0].map(s => (n >>> s) & 255).join('.');
+}
+
+function buildSlots(cidr: string, records: IpAddress[]): IpSlot[] | null {
+    const [base, prefixStr] = cidr.split('/');
+    const prefix = parseInt(prefixStr, 10);
+    const size = 2 ** (32 - prefix);
+    if (Number.isNaN(prefix) || size > 256) return null;
+
+    const byAddress = new Map(records.map(r => [r.address, r]));
+    const network = ipToInt(base) & (~(size - 1) >>> 0);
+
+    return Array.from({ length: size }, (_, i) => {
+        const address = intToIp(network + i);
+        const record = byAddress.get(address);
+        let status: SlotStatus = 'free';
+        if (i === 0) status = 'network';
+        else if (i === size - 1) status = 'broadcast';
+        else if (record?.status === 'reserved') status = 'reserved';
+        else if (record) status = 'used';
+        return { address, status, record };
+    });
+}
+
+const SLOT_CLASSES: Record<SlotStatus, string> = {
+    free: 'bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200',
+    used: 'bg-primary-500 text-white',
+    reserved: 'bg-amber-400 text-white',
+    network: 'bg-slate-300 dark:bg-slate-600',
+    broadcast: 'bg-slate-300 dark:bg-slate-600',
+};
+
+export default function DatacenterPage() {
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [dialogSlot, setDialogSlot] = useState<IpSlot | null>(null);
+    const queryClient = useQueryClient();
+
+    const { data: ranges, isLoading, error } = useQuery({
+        queryKey: ['public-subnets'],
+        queryFn: NetworkService.getPublicSubnets,
+    });
+
+    const selectedRange: Subnet | undefined =
+        ranges?.find(r => r.id === selectedId) ?? ranges?.[0];
+
+    const { data: ips } = useQuery({
+        queryKey: ['public-ips', selectedRange?.id],
+        queryFn: () => NetworkService.getIps(selectedRange!.id),
+        enabled: !!selectedRange,
+    });
+
+    const { data: tenants } = useQuery({ queryKey: ['tenants'], queryFn: TenantService.getAll });
+    const customers = useMemo(() => (tenants ?? []).filter(t => t.type === 'CUSTOMER'), [tenants]);
+
+    const slots = useMemo(
+        () => (selectedRange && ips ? buildSlots(selectedRange.cidr, ips) : null),
+        [selectedRange, ips]
+    );
+
+    const saveMutation = useMutation({
+        mutationFn: async (input: { slot: IpSlot; tenantId: string | null; usage: string; reserved: boolean }) => {
+            const { slot, tenantId, usage, reserved } = input;
+            const status = reserved ? 'reserved' : 'active';
+            let record = slot.record;
+            if (!record) {
+                record = await NetworkService.createIp({
+                    subnetId: selectedRange!.id,
+                    address: slot.address,
+                    status,
+                    description: usage || undefined,
+                });
+            } else {
+                record = await NetworkService.updateIp(record.id, { status, description: usage || undefined });
+            }
+            await ProviderService.setAssignment('ips', record.id, tenantId);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['public-ips', selectedRange?.id] });
+            setDialogSlot(null);
+        },
+    });
+
+    if (isLoading) {
+        return <div className="p-12 flex justify-center"><Loader2 className="animate-spin text-slate-400" /></div>;
+    }
+    if (error) {
+        return <div className="p-12 text-center text-red-500">Fehler beim Laden der Public Ranges: {(error as Error).message}</div>;
+    }
+
+    const usedCount = ips?.filter(ip => ip.status !== 'reserved').length ?? 0;
+    const reservedCount = ips?.filter(ip => ip.status === 'reserved').length ?? 0;
 
     return (
-        <div className="flex h-full">
-            {/* Left: Range List */}
-            <div className="w-72 border-r border-white/60 bg-white/80 backdrop-blur flex-shrink-0 flex flex-col">
-                <div className="p-4 border-b border-white/70">
-                    <div className="flex items-center justify-between mb-3">
-                        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-                            <Globe size={16} className="text-primary-500" />
-                            IP Ranges
-                        </h2>
-                        <button className="btn-icon text-primary-500">
-                            <Plus size={16} />
-                        </button>
+        <div className="page">
+            <div className="mb-6">
+                <h1 className="page-title">Datacenter · Public IPs</h1>
+                <p className="page-subtitle">Öffentliche IP-Ranges des MSP, Kunden zuweisbar</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {/* Range list */}
+                <div className="card overflow-hidden lg:col-span-1">
+                    <div className="px-4 py-3 border-b border-white/70 dark:border-white/10 font-semibold text-sm text-slate-800 dark:text-white">
+                        Ranges
                     </div>
-                </div>
-                <div className="flex-1 overflow-y-auto">
-                    {MOCK_RANGES.map(range => (
+                    {(ranges ?? []).map(range => (
                         <button
                             key={range.id}
-                            onClick={() => setSelectedRange(range)}
+                            onClick={() => setSelectedId(range.id)}
                             className={cn(
-                                'w-full text-left px-4 py-3 border-b border-white/70 flex items-center gap-3 transition-colors',
-                                selectedRange.id === range.id
-                                    ? 'bg-primary-50 border-l-2 border-l-primary-400'
-                                    : 'hover:bg-white/70'
+                                'w-full flex items-center justify-between px-4 py-3 text-left text-sm hover:bg-primary-50 dark:hover:bg-white/5',
+                                selectedRange?.id === range.id && 'bg-primary-50 dark:bg-white/10'
                             )}
                         >
-                            <div className="flex-1">
-                                <p className="text-sm font-mono font-semibold text-slate-800">{range.cidr}</p>
-                                <p className="text-xs text-slate-500 mt-0.5">{range.description}</p>
+                            <div>
+                                <div className="font-mono font-medium text-slate-800 dark:text-white">{range.cidr}</div>
+                                <div className="text-xs text-slate-500">{range.description ?? '—'}</div>
                             </div>
                             <ChevronRight size={14} className="text-slate-300" />
                         </button>
                     ))}
-                </div>
-            </div>
-
-            {/* Right: IP Grid */}
-            <div className="flex-1 flex flex-col min-w-0">
-                {/* Header */}
-                <div className="px-6 py-4 bg-white/75 backdrop-blur border-b border-white/60 flex items-center justify-between">
-                    <div>
-                        <h2 className="text-lg font-semibold text-slate-800 font-mono">{selectedRange.cidr}</h2>
-                        <p className="text-xs text-slate-500">{selectedRange.description}</p>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs">
-                        <span className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 rounded bg-slate-200 border border-slate-300" /> Frei ({freeCount})
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 rounded bg-red-100 border border-red-300" /> Belegt ({usedCount})
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 rounded bg-amber-100 border border-amber-300" /> Reserviert ({reservedCount})
-                        </span>
-                    </div>
+                    {(ranges ?? []).length === 0 && (
+                        <div className="p-6 text-center text-sm text-slate-500">
+                            <Globe size={24} className="mx-auto mb-2 text-slate-300" />
+                            Keine öffentlichen Ranges dokumentiert.
+                        </div>
+                    )}
                 </div>
 
-                {/* Progress Bar */}
-                <div className="px-6 py-2 bg-white/70 border-b border-white/70">
-                    <div className="flex h-2 rounded-full overflow-hidden bg-slate-100">
-                        <div className="bg-red-400" style={{ width: `${(usedCount / selectedRange.ips.length) * 100}%` }} />
-                        <div className="bg-amber-400" style={{ width: `${(reservedCount / selectedRange.ips.length) * 100}%` }} />
-                    </div>
-                </div>
-
-                {/* IP Grid */}
-                <div className="flex-1 overflow-auto p-6">
-                    <div className="grid grid-cols-8 sm:grid-cols-12 md:grid-cols-16 lg:grid-cols-16 gap-1">
-                        {selectedRange.ips.map((ip) => {
-                            const lastOctet = ip.address.split('.').pop();
-                            return (
-                                <div
-                                    key={ip.address}
-                                    onMouseEnter={() => setHoveredIp(ip)}
-                                    onMouseLeave={() => setHoveredIp(null)}
-                                    className={cn(
-                                        'relative aspect-square rounded border text-[10px] font-mono flex items-center justify-center cursor-pointer transition-all hover:scale-110 hover:z-10 hover:shadow-md',
-                                        ip.status === 'free' && 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100',
-                                        ip.status === 'used' && 'bg-red-50 border-red-200 text-red-700 font-semibold',
-                                        ip.status === 'reserved' && 'bg-amber-50 border-amber-200 text-amber-700',
-                                        ip.status === 'network' && 'bg-slate-200 border-slate-300 text-slate-500',
-                                        ip.status === 'broadcast' && 'bg-slate-200 border-slate-300 text-slate-500',
-                                    )}
-                                    title={ip.tenant ? `${ip.address} → ${ip.tenant}${ip.usage ? ` (${ip.usage})` : ''}` : ip.address}
-                                >
-                                    .{lastOctet}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Hover Detail Bar */}
-                <div className="h-10 px-6 border-t border-white/60 bg-white/75 backdrop-blur flex items-center text-xs text-slate-500 gap-6">
-                    {hoveredIp ? (
+                {/* Grid */}
+                <div className="lg:col-span-3 space-y-4">
+                    {selectedRange && (
                         <>
-                            <span className="font-mono font-semibold text-slate-800">{hoveredIp.address}</span>
-                            <span className={cn(
-                                'badge',
-                                hoveredIp.status === 'free' && 'badge-planned',
-                                hoveredIp.status === 'used' && 'badge-error',
-                                hoveredIp.status === 'reserved' && 'badge-warning',
-                            )}>
-                                {hoveredIp.status === 'free' ? 'Frei' :
-                                    hoveredIp.status === 'used' ? 'Belegt' :
-                                        hoveredIp.status === 'reserved' ? 'Reserviert' :
-                                            hoveredIp.status}
-                            </span>
-                            {hoveredIp.tenant && <span>Tenant: <strong>{hoveredIp.tenant}</strong></span>}
-                            {hoveredIp.usage && <span className="italic">{hoveredIp.usage}</span>}
+                            <div className="flex gap-4 text-xs text-slate-600 dark:text-slate-400">
+                                <span><b>{usedCount}</b> vergeben</span>
+                                <span><b>{reservedCount}</b> reserviert</span>
+                                <span><b>{selectedRange.totalIps - (ips?.length ?? 0)}</b> frei</span>
+                            </div>
+                            {slots ? (
+                                <div className="card p-4 grid grid-cols-8 sm:grid-cols-12 md:grid-cols-12 gap-1">
+                                    {slots.map(slot => (
+                                        <button
+                                            key={slot.address}
+                                            title={`${slot.address}${slot.record?.assignedTenantName ? ` · ${slot.record.assignedTenantName}` : ''}${slot.record?.description ? ` · ${slot.record.description}` : ''}`}
+                                            disabled={slot.status === 'network' || slot.status === 'broadcast'}
+                                            onClick={() => setDialogSlot(slot)}
+                                            className={cn('h-7 rounded text-[9px] font-mono flex items-center justify-center', SLOT_CLASSES[slot.status])}
+                                        >
+                                            {slot.address.split('.')[3]}
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="card p-6 text-sm text-slate-500">
+                                    Range zu groß für Rasteransicht – dokumentierte IPs: {ips?.length ?? 0}
+                                </div>
+                            )}
                         </>
-                    ) : (
-                        <span>Hover über eine IP für Details</span>
                     )}
                 </div>
             </div>
+
+            {/* Assign dialog */}
+            {dialogSlot && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white/90 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl p-6 w-full max-w-md shadow-2xl border border-white/60 dark:border-white/10">
+                        <div className="flex items-center justify-between mb-5">
+                            <h2 className="text-lg font-bold text-slate-800 dark:text-white font-mono">{dialogSlot.address}</h2>
+                            <button onClick={() => setDialogSlot(null)} className="btn-icon"><X size={16} /></button>
+                        </div>
+                        <form onSubmit={e => {
+                            e.preventDefault();
+                            const fd = new FormData(e.currentTarget);
+                            const tenantId = (fd.get('tenantId') as string) || null;
+                            saveMutation.mutate({
+                                slot: dialogSlot,
+                                tenantId,
+                                usage: fd.get('usage') as string,
+                                reserved: fd.get('reserved') === 'on',
+                            });
+                        }}>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Kunde</label>
+                                    <select name="tenantId" defaultValue={dialogSlot.record?.assignedTenantId ?? ''} className="input">
+                                        <option value="">— nicht zugewiesen —</option>
+                                        {customers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Verwendung</label>
+                                    <input name="usage" defaultValue={dialogSlot.record?.description ?? ''} placeholder="z.B. Firewall WAN1" className="input" />
+                                </div>
+                                <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                                    <input type="checkbox" name="reserved" defaultChecked={dialogSlot.record?.status === 'reserved'} className="rounded" />
+                                    Reserviert
+                                </label>
+                            </div>
+                            <div className="mt-6 flex justify-end gap-3">
+                                <button type="button" onClick={() => setDialogSlot(null)} className="btn-secondary">Abbrechen</button>
+                                <button type="submit" disabled={saveMutation.isPending} className="btn-primary disabled:opacity-50">
+                                    {saveMutation.isPending ? 'Speichere...' : 'Speichern'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
