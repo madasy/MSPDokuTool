@@ -7,6 +7,7 @@ import com.msp.doku.dto.CreateDeviceRequest
 import com.msp.doku.dto.DeviceDto
 import com.msp.doku.repository.DeviceRepository
 import com.msp.doku.repository.RackRepository
+import com.msp.doku.repository.VpnTunnelRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -15,7 +16,8 @@ import java.util.UUID
 class DeviceService(
     private val deviceRepository: DeviceRepository,
     private val rackRepository: RackRepository,
-    private val docService: DocService
+    private val docService: DocService,
+    private val vpnTunnelRepository: VpnTunnelRepository
 ) {
 
     fun getAllDevices(): List<DeviceDto> {
@@ -76,6 +78,9 @@ class DeviceService(
 
     @Transactional
     fun deleteDevice(id: UUID) {
+        if (vpnTunnelRepository.existsByLocalDeviceId(id)) {
+            throw IllegalStateException("Gerät kann nicht gelöscht werden – es ist Endpunkt eines VPN-Tunnels")
+        }
         if (deviceRepository.existsById(id)) {
             docService.deleteAllForEntity(DocEntityType.DEVICE, id)
             deviceRepository.deleteById(id)

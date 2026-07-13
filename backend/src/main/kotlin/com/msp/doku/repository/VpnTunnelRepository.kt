@@ -9,4 +9,5 @@ import java.util.UUID
 interface VpnTunnelRepository : JpaRepository<VpnTunnel, UUID> {
     fun findByTenantId(tenantId: UUID): List<VpnTunnel>
     fun existsByTenantId(tenantId: UUID): Boolean
+    fun existsByLocalDeviceId(deviceId: UUID): Boolean
 }

@@ -1,5 +1,6 @@
 package com.msp.doku.config
 
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -17,4 +18,9 @@ class GlobalExceptionHandler {
     @ExceptionHandler(IllegalStateException::class)
     fun handleConflict(e: IllegalStateException): ResponseEntity<ApiError> =
         ResponseEntity.status(HttpStatus.CONFLICT).body(ApiError(e.message ?: "Konflikt"))
+
+    @ExceptionHandler(DataIntegrityViolationException::class)
+    fun handleIntegrity(e: DataIntegrityViolationException): ResponseEntity<ApiError> =
+        ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(ApiError("Löschen nicht möglich – das Objekt wird noch von anderen Einträgen referenziert (z.B. Racks, Geräte oder Tunnel)."))
 }
