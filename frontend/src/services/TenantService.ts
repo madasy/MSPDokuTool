@@ -29,7 +29,8 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
     });
 
     if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
+        const text = await response.text();
+        throw new Error(`API Error: ${response.status} ${response.statusText} - ${text}`);
     }
 
     // Handle 204 No Content

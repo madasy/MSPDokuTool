@@ -87,7 +87,7 @@ export default function NotesAndFieldsPanel({ entityType, entityId }: Props) {
                     {fields.map(f => (
                         <span key={f.id} className="inline-flex items-center gap-1.5 text-xs bg-slate-100 dark:bg-slate-700/60 rounded-full px-3 py-1">
                             <b className="text-slate-700 dark:text-slate-200">{f.name}:</b>
-                            {f.fieldType === 'URL'
+                            {f.fieldType === 'URL' && /^https?:\/\//i.test(f.value)
                                 ? <a href={f.value} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline">{f.value}</a>
                                 : <span className="text-slate-600 dark:text-slate-300">{f.value}</span>}
                             <button onClick={() => deleteField.mutate(f.id)} className="text-slate-400 hover:text-red-500"><X size={11} /></button>

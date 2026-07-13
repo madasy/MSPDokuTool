@@ -3,10 +3,12 @@ import { TenantService } from '../services/TenantService';
 import { Plus, Loader2, Users, ArrowRight, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useToast } from '../components/ui/Toast';
 
 export default function TenantListPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const queryClient = useQueryClient();
+    const { addToast } = useToast();
 
     const { data: tenants, isLoading, error } = useQuery({
         queryKey: ['tenants'],
@@ -18,6 +20,9 @@ export default function TenantListPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['tenants'] });
             setIsCreateModalOpen(false);
+        },
+        onError: (err: Error) => {
+            addToast({ type: 'error', title: 'Fehler beim Erstellen', message: err.message });
         },
     });
 

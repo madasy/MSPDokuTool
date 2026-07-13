@@ -99,10 +99,12 @@ export default function DatacenterPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['public-ips', selectedRange?.id] });
+            queryClient.invalidateQueries({ queryKey: ['public-subnets'] });
             setDialogSlot(null);
         },
         onError: (err: Error) => {
             addToast({ type: 'error', title: 'Fehler beim Speichern', message: err.message });
+            queryClient.invalidateQueries({ queryKey: ['public-ips', selectedRange?.id] });
         },
     });
 

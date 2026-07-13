@@ -10,6 +10,7 @@ import {
     type HashAlgorithm,
 } from '../../services/VpnTunnelService';
 import { DeviceService } from '../../services/DeviceService';
+import { useToast } from '../ui/Toast';
 
 const TYPE_LABELS: Record<TunnelType, string> = {
     IPSEC_S2S: 'IPsec Site-to-Site',
@@ -27,6 +28,7 @@ const STATUS_BADGES: Record<string, string> = {
 export default function VpnTunnelSection({ tenantId }: { tenantId: string }) {
     const [showForm, setShowForm] = useState(false);
     const queryClient = useQueryClient();
+    const { addToast } = useToast();
 
     const { data: tunnels } = useQuery({
         queryKey: ['vpn-tunnels', tenantId],
@@ -42,15 +44,21 @@ export default function VpnTunnelSection({ tenantId }: { tenantId: string }) {
             queryClient.invalidateQueries({ queryKey: ['vpn-tunnels', tenantId] });
             setShowForm(false);
         },
+        onError: (err: Error) => {
+            addToast({ type: 'error', title: 'Fehler beim Erstellen', message: err.message });
+        },
     });
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => VpnTunnelService.delete(id),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['vpn-tunnels', tenantId] }),
+        onError: (err: Error) => {
+            addToast({ type: 'error', title: 'Fehler beim Löschen', message: err.message });
+        },
     });
 
     return (
-        <div className="card overflow-hidden mt-6">
+        <div className="card overflow-hidden">
             <div className="px-5 py-4 border-b border-white/70 dark:border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Lock size={15} className="text-slate-400" />
