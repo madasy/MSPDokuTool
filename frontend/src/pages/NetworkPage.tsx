@@ -5,6 +5,7 @@ import { Copy, Search, Plus, X, Check, ChevronDown, ChevronUp, Trash2, Loader2 }
 import { useToast } from '../components/ui/Toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { NetworkService, type Subnet, type IpAddress, type CreateSubnetRequest, type CreateIpAddressRequest, type UpdateIpAddressRequest } from '../services/NetworkService';
+import VpnTunnelSection from '../components/network/VpnTunnelSection';
 
 const STATUS_OPTIONS = [
     { value: 'manual', label: 'Manuell', badgeClass: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
@@ -86,6 +87,8 @@ export default function NetworkPage() {
                         searchQuery={searchQuery}
                     />
                 ))}
+
+                {tenantId && <VpnTunnelSection tenantId={tenantId} />}
             </div>
 
             {/* Add Subnet Modal */}
@@ -164,6 +167,11 @@ function SubnetTable({ subnet, searchQuery }: { subnet: Subnet; searchQuery: str
                         {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </button>
                     <span className="font-mono font-bold text-sm text-slate-800 dark:text-white">{subnet.cidr}</span>
+                    {subnet.assignedTenantName && (
+                        <span className="ml-2 text-[10px] font-medium bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300 px-2 py-0.5 rounded-full">
+                            {subnet.assignedTenantName}
+                        </span>
+                    )}
                     {(subnet.vlanTag || subnet.vlanId) && <span className="badge badge-ok text-[10px]">VLAN {subnet.vlanTag || subnet.vlanId} {subnet.vlanName ? `– ${subnet.vlanName}` : ''}</span>}
                     <span className="text-xs text-slate-500 dark:text-slate-400">{subnet.description}</span>
                     {subnet.gateway && <span className="text-xs text-slate-400">GW: {subnet.gateway}</span>}
