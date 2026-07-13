@@ -18,4 +18,7 @@ interface DeviceRepository : JpaRepository<Device, UUID> {
 
     @Query("SELECT d FROM Device d LEFT JOIN d.rack r LEFT JOIN r.room rm LEFT JOIN rm.site rs LEFT JOIN d.site ds WHERE (rs.tenant.id = :tenantId OR ds.tenant.id = :tenantId) AND d.rack IS NULL")
     fun findUnplacedByTenantId(tenantId: UUID): List<Device>
+
+    fun findByAssignedTenantId(tenantId: UUID): List<Device>
+    fun existsByAssignedTenantId(tenantId: UUID): Boolean
 }

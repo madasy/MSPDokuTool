@@ -10,4 +10,6 @@ interface PublicIpAssignmentRepository : JpaRepository<PublicIpAssignment, UUID>
     fun findByRangeIdOrderByIpAddress(rangeId: UUID): List<PublicIpAssignment>
     fun findByRangeIdAndIpAddress(rangeId: UUID, ipAddress: String): PublicIpAssignment?
     fun countByRangeIdAndStatusNot(rangeId: UUID, status: String): Long
+    fun findByAssignedTenantId(tenantId: UUID): List<PublicIpAssignment>
+    fun existsByAssignedTenantId(tenantId: UUID): Boolean
 }

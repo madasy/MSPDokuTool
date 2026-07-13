@@ -18,6 +18,10 @@ class Vlan(
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "tenant_id", nullable = false)
-    var tenant: Tenant
+    var tenant: Tenant,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_tenant_id")
+    var assignedTenant: Tenant? = null
 
 ) : BaseEntity()
