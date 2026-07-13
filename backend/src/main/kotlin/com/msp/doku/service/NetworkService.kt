@@ -37,6 +37,9 @@ class NetworkService(
                 vlanTag = subnet.vlan?.vlanId,
                 vlanName = subnet.vlan?.name ?: (subnet.vlan?.vlanId?.toString()),
                 gateway = subnet.gateway,
+                isPublic = subnet.isPublic,
+                assignedTenantId = subnet.assignedTenant?.id,
+                assignedTenantName = subnet.assignedTenant?.name,
                 usedIps = usedIps,
                 totalIps = totalIps,
                 utilizationPercent = if (totalIps > 0) (usedIps.toDouble() / totalIps) * 100 else 0.0
@@ -85,6 +88,9 @@ class NetworkService(
             id = saved.id!!,
             cidr = saved.cidr,
             description = saved.description,
+            isPublic = saved.isPublic,
+            assignedTenantId = saved.assignedTenant?.id,
+            assignedTenantName = saved.assignedTenant?.name,
             usedIps = 0,
             totalIps = calculateTotalIps(saved.cidr),
             utilizationPercent = 0.0
@@ -143,6 +149,8 @@ class NetworkService(
         status = this.status,
         hostname = this.hostname,
         description = this.description,
-        mac = this.mac
+        mac = this.mac,
+        assignedTenantId = this.assignedTenant?.id,
+        assignedTenantName = this.assignedTenant?.name
     )
 }

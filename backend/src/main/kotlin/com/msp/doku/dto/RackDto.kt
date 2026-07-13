@@ -29,7 +29,9 @@ data class DeviceDto(
     val heightU: Int,
     val status: DeviceStatus,
     val rackId: UUID?,
-    val rackName: String?
+    val rackName: String?,
+    val assignedTenantId: UUID? = null,
+    val assignedTenantName: String? = null
 )
 
 data class CreateDeviceRequest(

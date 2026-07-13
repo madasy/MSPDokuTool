@@ -10,6 +10,9 @@ data class SubnetDto(
     val vlanTag: Int? = null,
     val vlanName: String? = null,
     val gateway: String? = null,
+    val isPublic: Boolean = false,
+    val assignedTenantId: UUID? = null,
+    val assignedTenantName: String? = null,
     val usedIps: Int,
     val totalIps: Int,
     val utilizationPercent: Double
@@ -31,7 +34,9 @@ data class IpAddressDto(
     val status: String,
     val hostname: String?,
     val description: String?,
-    val mac: String? = null
+    val mac: String? = null,
+    val assignedTenantId: UUID? = null,
+    val assignedTenantName: String? = null
 )
 
 data class CreateIpAddressRequest(
