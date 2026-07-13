@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { Server, Network, Activity, FileText, ArrowRight, Shield, Clock } from 'lucide-react';
 import ProvidedByMspPanel from '../components/tenant/ProvidedByMspPanel';
+import NotesAndFieldsPanel from '../components/doc/NotesAndFieldsPanel';
 
 // Mock data for a tenant
 const MOCK_TENANT_DATA = {
@@ -106,6 +107,8 @@ export default function TenantDashboardPage() {
                     </div>
                 </div>
             </div>
+
+            {tenantId && <NotesAndFieldsPanel entityType="TENANT" entityId={tenantId} />}
         </div>
     );
 }
