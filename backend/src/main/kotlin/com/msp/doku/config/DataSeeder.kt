@@ -1,11 +1,17 @@
 package com.msp.doku.config
 
 import com.msp.doku.domain.*
+import com.msp.doku.repository.CustomFieldRepository
 import com.msp.doku.repository.DeviceRepository
+import com.msp.doku.repository.IpAddressRepository
+import com.msp.doku.repository.NoteRepository
 import com.msp.doku.repository.RackRepository
 import com.msp.doku.repository.RoomRepository
 import com.msp.doku.repository.SiteRepository
+import com.msp.doku.repository.SubnetRepository
 import com.msp.doku.repository.TenantRepository
+import com.msp.doku.repository.VlanRepository
+import com.msp.doku.repository.VpnTunnelRepository
 import org.springframework.boot.CommandLineRunner
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -17,18 +23,29 @@ class DataSeeder(
     private val rackRepository: RackRepository,
     private val siteRepository: SiteRepository,
     private val roomRepository: RoomRepository,
-    private val tenantRepository: TenantRepository
+    private val tenantRepository: TenantRepository,
+    private val subnetRepository: SubnetRepository,
+    private val ipAddressRepository: IpAddressRepository,
+    private val vlanRepository: VlanRepository,
+    private val vpnTunnelRepository: VpnTunnelRepository,
+    private val noteRepository: NoteRepository,
+    private val customFieldRepository: CustomFieldRepository
 ) : CommandLineRunner {
 
     @Transactional
     override fun run(vararg args: String?) {
-        if (deviceRepository.count() > 0) return
+        val customer = seedCustomerDemo()
+        seedMspInfra(customer)
+    }
+
+    private fun seedCustomerDemo(): Tenant {
+        val existing = tenantRepository.findByIdentifier("default")
+        if (existing != null) return existing
 
         println("Seeding initial data...")
-        
+
         // Ensure default tenant exists
-        val tenant = tenantRepository.findByIdentifier("default") 
-            ?: tenantRepository.save(Tenant(name = "Default Tenant", identifier = "default"))
+        val tenant = tenantRepository.save(Tenant(name = "Default Tenant", identifier = "default"))
 
         // Create Site
         val site = Site(name = "Hauptstandort", address = "Musterstraße 1, 8000 Zürich", tenant = tenant)
@@ -128,5 +145,79 @@ class DataSeeder(
 
         deviceRepository.saveAll(devices)
         println("Seeded ${devices.size} devices.")
+
+        return tenant
+    }
+
+    private fun seedMspInfra(customer: Tenant) {
+        if (tenantRepository.findByIdentifier("igeeks") != null) return
+
+        println("Seeding MSP infrastructure...")
+        val msp = tenantRepository.save(Tenant(name = "iGeeks (MSP)", identifier = "igeeks", type = TenantType.MSP))
+
+        val dcSite = siteRepository.save(Site(name = "Datacenter Zürich", address = "Colo Park 1, 8005 Zürich", tenant = msp))
+        val dcRoom = roomRepository.save(Room(name = "Colo Cage 4", floor = "EG", site = dcSite))
+        val dcRack = rackRepository.save(Rack(name = "DC-Rack-01", heightUnits = 47, room = dcRoom))
+
+        val dcFirewall = deviceRepository.save(
+            Device(
+                name = "DC-FW-01", deviceType = DeviceType.FIREWALL, model = "Fortinet FortiGate 200F",
+                serialNumber = "FGT-2025-1001", managementIp = "172.16.0.1",
+                rack = dcRack, positionU = 45, heightU = 1
+            )
+        )
+        deviceRepository.save(
+            Device(
+                name = "Cloud-SRV-Default", deviceType = DeviceType.SERVER, model = "Dell PowerEdge R660",
+                serialNumber = "SRV-2025-2001", managementIp = "172.16.10.20",
+                rack = dcRack, positionU = 20, heightU = 1,
+                assignedTenant = customer
+            )
+        )
+
+        val primaryBlock = subnetRepository.save(
+            Subnet(tenant = msp, cidr = "203.0.113.0/24", description = "Primary Public Block", isPublic = true)
+        )
+        val secondaryBlock = subnetRepository.save(
+            Subnet(tenant = msp, cidr = "198.51.100.0/28", description = "Secondary Block", isPublic = true)
+        )
+        ipAddressRepository.saveAll(
+            listOf(
+                IpAddress(subnet = primaryBlock, address = "203.0.113.1", status = "reserved", description = "Gateway"),
+                IpAddress(subnet = primaryBlock, address = "203.0.113.10", status = "active",
+                    description = "Firewall WAN1", assignedTenant = customer),
+                IpAddress(subnet = primaryBlock, address = "203.0.113.11", status = "active",
+                    description = "Mail Gateway", assignedTenant = customer),
+                IpAddress(subnet = secondaryBlock, address = "198.51.100.1", status = "active",
+                    description = "VPN Gateway", assignedTenant = customer)
+            )
+        )
+
+        vlanRepository.save(Vlan(vlanId = 110, name = "Default-Kunde", tenant = msp, assignedTenant = customer))
+
+        val tunnel = vpnTunnelRepository.save(
+            VpnTunnel(
+                name = "S2S Default HQ", type = TunnelType.IPSEC_S2S, tenant = customer,
+                localDevice = dcFirewall,
+                ikeVersion = IkeVersion.IKEV2, encryption = EncryptionAlgorithm.AES_256,
+                hash = HashAlgorithm.SHA256, dhGroup = 14,
+                secretRef = "Bitwarden: vpn-default-psk"
+            )
+        )
+
+        noteRepository.save(
+            Note(
+                title = "Failover Runbook DC-FW-01",
+                contentMarkdown = "## HA-Failover\n\n1. HA-Status prüfen (`get system ha status`)\n2. Failover auslösen\n3. Tunnel-Status kontrollieren",
+                entityType = DocEntityType.DEVICE, entityId = dcFirewall.id!!
+            )
+        )
+        customFieldRepository.save(
+            CustomField(
+                name = "Supportvertrag", value = "FC-2026-042", fieldType = FieldType.TEXT,
+                entityType = DocEntityType.DEVICE, entityId = dcFirewall.id!!
+            )
+        )
+        println("Seeded MSP tenant with DC infra, public ranges and tunnel ${tunnel.name}.")
     }
 }
