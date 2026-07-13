@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { Server, Network, Activity, FileText, ArrowRight, Shield, Clock } from 'lucide-react';
+import ProvidedByMspPanel from '../components/tenant/ProvidedByMspPanel';
 
 // Mock data for a tenant
 const MOCK_TENANT_DATA = {
@@ -45,6 +46,8 @@ export default function TenantDashboardPage() {
                 <QuickStatCard icon={<Shield size={18} />} label="Public IPs" value={MOCK_TENANT_DATA.publicIps} />
                 <QuickStatCard icon={<Clock size={18} />} label="Letzte Änderung" value={MOCK_TENANT_DATA.lastChange} small />
             </div>
+
+            {tenantId && <ProvidedByMspPanel tenantId={tenantId} />}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Quick Navigation */}
