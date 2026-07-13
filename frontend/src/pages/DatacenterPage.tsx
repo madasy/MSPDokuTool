@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cn } from '../lib/utils';
 import { Globe, ChevronRight, Loader2, X } from 'lucide-react';
+import { useToast } from '../components/ui/Toast';
 import { NetworkService, type Subnet, type IpAddress } from '../services/NetworkService';
 import { ProviderService } from '../services/ProviderService';
 import { TenantService } from '../services/TenantService';
@@ -55,6 +56,7 @@ export default function DatacenterPage() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [dialogSlot, setDialogSlot] = useState<IpSlot | null>(null);
     const queryClient = useQueryClient();
+    const { addToast } = useToast();
 
     const { data: ranges, isLoading, error } = useQuery({
         queryKey: ['public-subnets'],
@@ -98,6 +100,9 @@ export default function DatacenterPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['public-ips', selectedRange?.id] });
             setDialogSlot(null);
+        },
+        onError: (err: Error) => {
+            addToast({ type: 'error', title: 'Fehler beim Speichern', message: err.message });
         },
     });
 
