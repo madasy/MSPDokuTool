@@ -1,5 +1,6 @@
 package com.msp.doku.service
 
+import com.msp.doku.domain.DocEntityType
 import com.msp.doku.domain.Tenant
 import com.msp.doku.domain.TenantType
 import com.msp.doku.dto.CreateTenantRequest
@@ -21,7 +22,8 @@ class TenantService(
     private val subnetRepository: SubnetRepository,
     private val ipAddressRepository: IpAddressRepository,
     private val deviceRepository: DeviceRepository,
-    private val vpnTunnelRepository: VpnTunnelRepository
+    private val vpnTunnelRepository: VpnTunnelRepository,
+    private val docService: DocService
 ) {
 
     fun getAllTenants(): List<TenantDto> {
@@ -61,6 +63,7 @@ class TenantService(
                 "Tenant kann nicht gelöscht werden – zugewiesene Ressourcen: ${blockers.joinToString(", ")}"
             )
         }
+        docService.deleteAllForEntity(DocEntityType.TENANT, id)
         tenantRepository.delete(tenant)
     }
 

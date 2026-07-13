@@ -20,8 +20,9 @@ class NetworkServiceTest {
     private val ipAddressRepository: IpAddressRepository = mock()
     private val tenantRepository: TenantRepository = mock()
     private val vlanRepository: VlanRepository = mock()
+    private val docService: DocService = mock()
 
-    private val service = NetworkService(subnetRepository, ipAddressRepository, tenantRepository, vlanRepository)
+    private val service = NetworkService(subnetRepository, ipAddressRepository, tenantRepository, vlanRepository, docService)
 
     @Test
     fun `getPublicSubnets maps public flag and assignment`() {

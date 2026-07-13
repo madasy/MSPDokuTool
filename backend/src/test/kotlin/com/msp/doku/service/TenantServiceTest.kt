@@ -29,10 +29,11 @@ class TenantServiceTest {
     private val ipAddressRepository: IpAddressRepository = mock()
     private val deviceRepository: DeviceRepository = mock()
     private val vpnTunnelRepository: VpnTunnelRepository = mock()
+    private val docService: DocService = mock()
 
     private val service = TenantService(
         tenantRepository, vlanRepository, subnetRepository,
-        ipAddressRepository, deviceRepository, vpnTunnelRepository
+        ipAddressRepository, deviceRepository, vpnTunnelRepository, docService
     )
 
     @Test

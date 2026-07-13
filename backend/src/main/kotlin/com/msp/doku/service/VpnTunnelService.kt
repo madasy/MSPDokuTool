@@ -1,5 +1,6 @@
 package com.msp.doku.service
 
+import com.msp.doku.domain.DocEntityType
 import com.msp.doku.domain.Subnet
 import com.msp.doku.domain.VpnTunnel
 import com.msp.doku.dto.CreateVpnTunnelRequest
@@ -18,7 +19,8 @@ class VpnTunnelService(
     private val vpnTunnelRepository: VpnTunnelRepository,
     private val tenantRepository: TenantRepository,
     private val deviceRepository: DeviceRepository,
-    private val subnetRepository: SubnetRepository
+    private val subnetRepository: SubnetRepository,
+    private val docService: DocService
 ) {
 
     @Transactional(readOnly = true)
@@ -83,6 +85,7 @@ class VpnTunnelService(
         if (!vpnTunnelRepository.existsById(id)) {
             throw IllegalArgumentException("VPN tunnel not found")
         }
+        docService.deleteAllForEntity(DocEntityType.VPN_TUNNEL, id)
         vpnTunnelRepository.deleteById(id)
     }
 

@@ -30,8 +30,9 @@ class VpnTunnelServiceTest {
     private val tenantRepository: TenantRepository = mock()
     private val deviceRepository: DeviceRepository = mock()
     private val subnetRepository: SubnetRepository = mock()
+    private val docService: DocService = mock()
 
-    private val service = VpnTunnelService(vpnTunnelRepository, tenantRepository, deviceRepository, subnetRepository)
+    private val service = VpnTunnelService(vpnTunnelRepository, tenantRepository, deviceRepository, subnetRepository, docService)
 
     private val customer = Tenant(name = "Kunde", identifier = "kunde").apply { id = UUID.randomUUID() }
     private val firewall = Device(name = "DC-FW-01", deviceType = DeviceType.FIREWALL)

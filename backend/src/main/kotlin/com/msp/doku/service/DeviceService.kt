@@ -2,6 +2,7 @@ package com.msp.doku.service
 
 import com.msp.doku.domain.Device
 import com.msp.doku.domain.DeviceStatus
+import com.msp.doku.domain.DocEntityType
 import com.msp.doku.dto.CreateDeviceRequest
 import com.msp.doku.dto.DeviceDto
 import com.msp.doku.repository.DeviceRepository
@@ -13,7 +14,8 @@ import java.util.UUID
 @Service
 class DeviceService(
     private val deviceRepository: DeviceRepository,
-    private val rackRepository: RackRepository
+    private val rackRepository: RackRepository,
+    private val docService: DocService
 ) {
 
     fun getAllDevices(): List<DeviceDto> {
@@ -75,6 +77,7 @@ class DeviceService(
     @Transactional
     fun deleteDevice(id: UUID) {
         if (deviceRepository.existsById(id)) {
+            docService.deleteAllForEntity(DocEntityType.DEVICE, id)
             deviceRepository.deleteById(id)
         }
     }
